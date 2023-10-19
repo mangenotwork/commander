@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h4><b>Commander设置</b></h4>
+
+                TODO...
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_list: {},
+        },
+
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+        },
+
+        created:function(){
+            console.log("created");
+            WSConnectNotice();
+        },
+
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

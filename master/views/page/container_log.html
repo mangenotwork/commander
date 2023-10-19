@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>容器:  {{container_id}}</b></h4>
+
+                <br>
+                <div id="mainshow" style="background: #000;color: #fff;width: 100%;height: 780px;padding:16px;font-size: 14px;overflow-y:auto;">
+                    <code id="show" style="background: #000;color: #fff;">
+                    </code>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            slave: "{[.slave]}",
+            container_id: "{[.container_id]}",
+            show: "",
+        },
+        methods: {
+            WSContainerLog:function(){
+                // container WS连接
+                const t = this;
+                console.log(t.slave, t.container_id);
+
+                const WSContainerLogUrl = "ws://127.0.0.1:18888/ws/container/log?slave="+t.slave+"&container="+t.container_id;
+                t.socket = new WebSocket(WSContainerLogUrl);
+                //t.socket.binaryType = 'arraybuffer';
+                t.socket.onopen = function(){
+                    console.log("已经连接");
+                };
+                t.socket.onerror = function(){
+                    console.log("WebSocket 连接发生错误");
+                    Alert("WebSocket 连接发生错误", "danger")
+                };
+                t.socket.onclose = function(){
+                    console.log("WebSocket 连接已经断开");
+                    Alert("WebSocket 连接已经断开", "danger")
+                };
+                t.socket.onmessage = function(event){
+                    console.log("收到消息");
+                    console.log(event.data);
+                    //Alert(event.data, "warning")
+                    if (t.show.length > 1000) {
+                        t.show = RemoveStrN(t.show, 100)
+                    }
+                    t.show = t.show + '<br>' + event.data;
+
+                    $("#show").empty();
+                    var txt =  t.show;
+                    txt = txt.replaceAll('\\n','<br>');
+                    txt = txt.replaceAll('\\"','"');
+                    txt = txt.replaceAll('\\x00','');
+                    $("#show").append(txt);
+
+                    // $("#show").empty();
+                    // $("#show").append(t.show);
+
+                    var div =  document.getElementById('mainshow')
+                    console.log(div.scrollTop);
+                    console.log($('#show').height());
+
+                    $('#mainshow').scrollTop( $('#show').height());
+                };
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            console.log(this.slave, this.container_id);
+            WSConnectNotice();
+            this.WSContainerLog();
+        },
+        mounted:function(){
+        },
+    })
+</script>
+
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>实时性能监控 - 主机:  {{slave}}</b></h4>
+
+
+                <br>
+
+                <!-- 图表 -->
+                <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="cpu-chart" style="width: 600px;height:400px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="mem-chart" style="width: 600px;height:400px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="net-chart" style="width: 600px;height:400px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="connect-chart" style="width: 600px;height:400px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<!-- 引入 echarts.js -->
+<script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js?v={[.pgid]}"></script>
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave: "{[.slave]}",
+            date: [],
+            cpu: [],
+            mem: [],
+            tx: [],
+            rx: [],
+            mem_use: "",
+            mem_limit: "",
+            connect: [],
+        },
+        methods: {
+            option:function (title, name, date, value, max){
+                var o = {
+                    title: {
+                        text: title,
+                        left: '50%',
+                        textAlign: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            lineStyle: {
+                                color: '#ddd'
+                            }
+                        },
+                        backgroundColor: 'rgba(255,255,255,1)',
+                        padding: [5, 10],
+                        textStyle: {
+                            color: '#7588E4',
+                        },
+                        extraCssText: 'box-shadow: 0 0 5px rgba(0,0,0,0.3)'
+                    },
+                    legend: {
+                        right: 20,
+                        orient: 'vertical',
+                        data: name
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: date,
+                        boundaryGap: false,
+                        splitLine: {
+                            show: true,
+                            interval: 'auto',
+                            lineStyle: {
+                                color: ['#D4DFF5']
+                            }
+                        },
+                        axisTick: {
+                            show: false
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: '#609ee9'
+                            }
+                        },
+                        axisLabel: {
+                            margin: 10,
+                            textStyle: {
+                                fontSize: 14
+                            }
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        splitLine: {
+                            lineStyle: {
+                                color: ['#D4DFF5']
+                            }
+                        },
+                        max: max,
+                        axisTick: {
+                            show: false
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: '#609ee9'
+                            }
+                        },
+                        axisLabel: {
+                            margin: 10,
+                            textStyle: {
+                                fontSize: 14
+                            }
+                        }
+                    },
+                    series: []
+                };
+
+                for (i in value) {
+                    console.log(value[i]);
+                    o.series.push(
+                        {
+                            name: value[i].name,
+                            type: 'line',
+                            smooth: true,
+                            showSymbol: false,
+                            symbol: 'circle',
+                            symbolSize: 6,
+                            data: value[i].value,
+                            areaStyle: {
+                                normal: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                        offset: 0,
+                                        color: 'rgba(248, 248, 255,1)'
+                                    }, {
+                                        offset: 1,
+                                        color: 'rgba(255, 255, 255,1)'
+                                    }], false)
+                                }
+                            },
+                            itemStyle: {
+                                normal: {
+                                    color: value[i].color
+                                }
+                            },
+                            lineStyle: {
+                                normal: {
+                                    width: 3
+                                }
+                            }
+                        }
+                    );
+                }
+
+                return o;
+            },
+
+            // 绘画表格
+            DrawChart:function (){
+                const t = this;
+
+                // 获取数据
+                const data = {};
+                AjaxRequestText(t.url.MonitorData(t.slave), data, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    for (i in dObj.body.data) {
+                        if( t.cpu.length > 11 ){
+                            t.cpu.shift();
+                        }
+                        if( t.date.length > 11 ){
+                            t.date.shift();
+                        }
+                        if( t.mem.length > 11 ){
+                            t.mem.shift();
+                        }
+                        if( t.tx.length > 11 ){
+                            t.tx.shift();
+                        }
+                        if( t.rx.length > 11 ){
+                            t.rx.shift();
+                        }
+
+                        t.date.push(dObj.body.data[i].Date);
+                        t.cpu.push(dObj.body.data[i].CPU);
+                        t.mem.push(dObj.body.data[i].MEM);
+                        t.tx.push(dObj.body.data[i].Tx);
+                        t.rx.push(dObj.body.data[i].Rx);
+                        t.mem_use = dObj.body.data[i].MEMUsage;
+                        t.mem_limit = dObj.body.data[i].MEMLimit;
+                        t.connect.push(dObj.body.data[i].Connect);
+                    }
+                });
+                console.log(t.date)
+
+                var date = ['00:00','2:00','4:00','6:00','8:00','10:00','12:00','14:00','16:00','18:00','20:00',"22:00"];
+                var CpuChart = echarts.init(document.getElementById('cpu-chart'))
+                var cpu_option = t.option("cpu", ["cpu"], t.date,
+                    [{
+                        "name":"cpu",
+                        "value": t.cpu,
+                        "color": '#58c8da',
+                    }],
+                    100
+                )
+                CpuChart.setOption(cpu_option);
+
+                var MemChart = echarts.init(document.getElementById('mem-chart'))
+                var mem_option = t.option("mem: "+t.mem_use + "/" + t.mem_limit, ["mem"], t.date,
+                    [{
+                        "name":"mem",
+                        "value": t.mem,
+                        "color": '#58c8da',
+                    }],
+                    100
+                )
+                MemChart.setOption(mem_option);
+
+                var NetChart = echarts.init(document.getElementById('net-chart'))
+                var net_option = t.option("TX/RX", ["tx", "rx"], t.date,
+                    [{
+                        "name":"tx",
+                        "value": t.tx,
+                        "color": '#58c8da',
+                    },
+                        {
+                            "name":"rx",
+                            "value": t.rx,
+                            "color": '#f7b851',
+                        }],
+                    9999999
+                )
+                NetChart.setOption(net_option);
+
+                var ConnectChart = echarts.init(document.getElementById('connect-chart'))
+                var connect_option = t.option("连接数", ["连接数"], t.date,
+                    [{
+                        "name":"连接数",
+                        "value": t.connect,
+                        "color": '#58c8da',
+                    }],
+                    9999
+                )
+                ConnectChart.setOption(connect_option);
+
+            }
+
+        },
+        created:function(){
+            console.log("created");
+            console.log(this.slave, this.container_id);
+            WSConnectNotice();
+            this.$nextTick(() => {
+                    this.DrawChart();
+                }
+            );
+
+        },
+        mounted:function(){
+            this.timer = setInterval(() => {
+                console.log("DrawChart");
+                this.DrawChart();
+            }, 2000)
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

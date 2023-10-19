@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<link href="/static/css/xterm.min.css" rel="stylesheet" type="text/css"/>
+<style>
+    body {
+        padding-bottom: 30px;
+    }
+
+    .terminal {
+        border: #000 solid 2px;
+        font-family: cursive;
+        font-size: 8px;
+    }
+
+    .reverse-video {
+        color: #000;
+        background: #f0f0f0;
+    }
+
+
+    .xterm-viewport {
+        height: 600px;
+    }
+
+</style>
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h4><b>在线终端:  {[.ip]}:{[.port]}</b></h4>
+
+                <a type="button" class="btn btn-default"  href="">刷新</a>
+
+                <hr>
+                <div id="terms"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script src="/static/js/xterm.min.js"></script>
+<script>
+    var ip = "{[.ip]}";
+    var port = "{[.port]}";
+    var user = "{[.user]}";
+    var password = "{[.password]}";
+
+    var socket = new WebSocket('ws://127.0.0.1:18888/ws/ssh?ip='+ip+"&port="+port+"&user="+user+"&password="+password);
+
+    socket.onopen = function () {
+
+        var term = new Terminal();
+        term.open(document.getElementById('terms'));
+
+        term.on('data', function (data) {
+            console.log(data);
+            socket.send(data);
+        });
+
+        socket.onmessage = function (msg) {
+            console.log(msg);
+            console.log(msg.data);
+            term.write(msg.data);
+        };
+        socket.onerror = function (e) {
+            console.log(e);
+        };
+
+        socket.onclose = function (e) {
+            console.log(e);
+            term.destroy();
+        };
+    };
+
+</script>
+
+</body>
+</html>

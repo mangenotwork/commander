@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>{{project}} 项目执行任务列表</b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#">功能按钮1</button>
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#">功能按钮2</button>
+                </div>
+                <hr>
+                <h4><b>任务列表</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshDocker()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th >项目名称</th>
+                            <th >所在主机</th>
+                            <th >任务ID</th>
+                            <th >PID</th>
+                            <th >CMD</th>
+                            <th >操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in executable_list">
+                            <td>{{item.Project}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.TaskID}}</td>
+                            <td>{{item.PID}}</td>
+                            <td>{{item.Cmd}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="RunState(item)">刷新状态</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Log(item)">查看日誌</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Stop(item)">終止</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ForceStop(item)">強制終止</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskRun(item)">启动</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskRestart(item)">重啓</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskDelete(item)">刪除</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutablePInfo(item)">查看进程详情</button>
+                                <button type="button" class="btn btn-default btn-sm" >clone到其他主機</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            project: "{[.project]}",
+            executable_list: [],
+        },
+        methods: {
+            GetList: function () {
+                const t = this;
+                AjaxRequestText(t.url.ProjectExecutableTask(t.project), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.executable_list = jsonObj.body.data;
+                    console.log(t.executable_list);
+                });
+            },
+        },
+        created:function(){
+            console.log("created");
+            this.GetList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4>
+                    <a type="button" @click="ReturnPG()">
+                        <span class="glyphicon glyphicon-arrow-left" aria-hidden="true" style="font-size: 24px;width: 36px;"></span>
+                    </a>
+                    <b>{{slave}} 主机端口列表 {{msg}} </b>
+                </h4>
+
+
+                <button type="button" class="btn btn-default" @click="ImagesRefresh()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th style="width: 10%;">PID</th>
+                            <th style="width: 10%;">PName</th>
+                            <th style="width: 10%;">ProtoType</th>
+                            <th style="width: 10%;">LocalAddress</th>
+                            <th style="width: 20%;">ForeignAddress</th>
+                            <th style="width: 10%;">State</th>
+                            <th style="">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in port">
+                            <td>{{item.PID}}</td>
+                            <td>{{item.PName}}</td>
+                            <td>{{item.ProtoType}}</td>
+                            <td>{{item.LocalAddress}}</td>
+                            <td>{{item.ForeignAddress}}</td>
+                            <td>{{item.State}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm">暂停</button>
+                                <button type="button" class="btn btn-default btn-sm">继续</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Stop(item)">终止</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ForceStop(item)">强制终止</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave: "{[.slave]}",
+            msg: "{[.Msg]}",
+            slave_list: {},
+            port: {},
+        },
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Switch: function (){
+                var newSlave = $('#switch_slave').val();
+                console.log(newSlave);
+                window.location.href="/slave/port/"+newSlave;
+            },
+
+            GetSlavePort: function (){
+                const t = this;
+                AjaxRequestText(t.url.SlavePortInfo(t.slave), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.port = jsonObj.body.data;
+                    console.log(t.port);
+                });
+            },
+
+            ReturnPG: function(){
+                const t = this;
+                window.location.href="/slave/"+t.slave;
+            },
+
+            Stop: function (item){
+                const t = this;
+                AjaxRequestText(t.url.SlaveProcessKill(t.slave, item.PID, "15"), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.body.data, "warning");
+                });
+            },
+
+            ForceStop: function (item){
+                const t = this;
+                AjaxRequestText(t.url.SlaveProcessKill(t.slave, item.PID, "9"), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.body.data, "warning");
+                });
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            console.log(this.slave);
+            this.GetSlaveList();
+            this.GetSlavePort();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+</script>
+
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h4><b>主机 {{slave}} 的目录&文件</b></h4>
+                <div class="form-inline">
+                    <input type="text" id="input_dir" class="form-control" id="exampleInputAmount" placeholder="/home">
+                    <button class="btn btn-primary" @click="GoToDir()">进入</button>
+                </div>
+                <hr>
+                <h4><b>{{now_path}}</b></h4>
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" @click="ReturnDir()">返回</button>
+                    <button type="button" class="btn btn-default" @click="GoToDirRefresh()">刷新</button>
+                    <button type="button" class="btn btn-default" @click="OpenUploadFile()">上传文件</button>
+                    <button type="button" class="btn btn-default" @click="OpenMkdir()">创建目录</button>
+                    <button type="button" class="btn btn-default" @click="PackDir()">打包下载整个目录</button>
+                </div>
+                <hr>
+                <br>
+                <div class="row">
+
+                    <div class="col-md-3" style="padding: 12px;height: 100px;" v-for="item in dir">
+                        <span v-if="item.IsDir === false && item.IsEdit === true"
+                              class="glyphicon glyphicon-cog" aria-hidden="true" style="font-size: 39px;"></span>
+
+                        <span v-else-if="item.IsDir === false && item.IsEdit === false"
+                              class="glyphicon glyphicon-file" aria-hidden="true" style="font-size: 39px;"></span>
+
+                        <span v-else-if="item.IsDir === true && item.IsEdit === false"
+                              class="glyphicon glyphicon-folder-close" aria-hidden="true" style="font-size: 39px;"></span>
+                        <br>
+                        {{item.FileName}}
+                        <br>
+                        <button v-if="item.IsDir == false && item.IsEdit == true"
+                                type="button" class="btn btn-default btn-xs" @click="OpenFileModal(item)">查看</button>
+                        <button v-if="item.IsDir == false"
+                                type="button" class="btn btn-default btn-xs" @click="DownloadFile(item)">下载</button>
+                        <button v-if="item.IsDir == true && item.IsEdit == false"
+                                type="button" class="btn btn-default btn-xs" @click="GoToDirBut(item)">进入</button>
+                        <button v-if="item.IsZip == true"
+                                type="button" class="btn btn-default btn-xs" @click="DecompressFile(item)">解压</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改文件 -->
+    <div class="modal fade" id="OpenFileModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">查看文件<span id="file_path"></span></h4>
+                </div>
+                <div class="modal-body">
+                    <pre id="file_code"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传文件 -->
+    <div class="modal fade" id="UploadFileModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">上传文件</h4>
+                </div>
+                <div class="modal-body">
+
+                    <form id="upload_file" class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">存放路径</label>
+                            <div class="col-sm-9">
+                                <input type="text" name="path" id="save_path" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">选择文件</label>
+                            <div class="col-sm-9">
+                                <input type="file" name="file" id="file">
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="UploadFileSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建目录 -->
+    <div class="modal fade" id="MkdirModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">创建目录</h4>
+                </div>
+                <div class="modal-body">
+
+                    <form class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">目录名称</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="mkdir_path" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="MkdirSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave: "{[.slave]}",
+            now_path: "/",
+            dir: {},
+        },
+
+        methods: {
+
+            GetSlavePath: function (path) {
+                const t = this;
+                $("#input_dir").val(path);
+                AjaxRequestText(t.url.GetSlavePath(t.slave, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    t.dir = jsonObj.body.data;
+                    console.log(t.dir);
+                });
+            },
+
+            ReturnDir: function () {
+                const t = this;
+                var lst = t.now_path.split("/")
+                console.log(lst);
+                var newPath = lst.slice(0,-1).join("/")
+                if (newPath === "") {
+                    newPath = "/";
+                }
+                console.log(newPath);
+                t.now_path = newPath;
+                t.GetSlavePath(t.now_path);
+            },
+
+            GoToDirBut: function (item) {
+                const t = this;
+                if (t.now_path === "/") {
+                    t.now_path = ""
+                }
+                t.now_path = t.now_path + "/" + item.FileName;
+                t.GetSlavePath(t.now_path);
+            },
+
+            GoToDir: function () {
+                const t = this;
+                t.now_path  = $("#input_dir").val()
+                this.GetSlavePath(t.now_path);
+            },
+
+            GoToDirRefresh: function () {
+                const t = this;
+                t.GetSlavePath(this.now_path);
+            },
+
+            OpenFileModal: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                AjaxRequestText(t.url.CatSlaveFile(t.slave, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    var note = jsonObj.body.data;
+                    console.log(note);
+                    $("#file_path").text(path);
+                    $("#file_code").text(note);
+                });
+
+                //console.log(path);
+
+                $("#OpenFileModal").modal('show');
+
+            },
+
+            DownloadFile: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/api/slave/download?path="+path+"&slave="+t.slave;
+            },
+
+            OpenUploadFile: function () {
+                const t = this;
+                $("#save_path").val(t.now_path);
+                $("#UploadFileModal").modal('show');
+            },
+
+            UploadFileSubmit: function () {
+                const t = this;
+
+                var fromData = new FormData($("#upload_file")[0]);
+                console.log(fromData);
+
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.UploadFileToSlave(t.slave),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        alert(data);
+                        $("#UploadFileModal").modal('hide');
+                        t.GetSlavePath(t.now_path);
+                    },
+                    error:function(){
+                        console.log("上传失败");
+                    }
+                });
+            },
+
+            OpenMkdir: function () {
+                $("#MkdirModal").modal('show');
+            },
+
+            MkdirSubmit: function () {
+                const t = this;
+                var path = t.now_path + "/" + $("#mkdir_path").val();
+                AjaxRequestText(t.url.SlaveMkdir(t.slave, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    t.GetSlavePath(t.now_path);
+                });
+                $("#MkdirModal").modal('hide');
+
+            },
+
+            PackDir: function () {
+                const t = this;
+                var lst = t.now_path.split("/")
+                console.log(lst);
+                if (lst.length < 3) {
+                    alert("目录太大，不允许打包下载!")
+                    return
+                }
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/api/slave/pack/dir?path="+t.now_path+"&slave="+t.slave;
+            },
+
+            DecompressFile: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                AjaxRequestText(t.url.SlaveDecompressFile(t.slave, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    t.GetSlavePath(t.now_path);
+                });
+                $("#MkdirModal").modal('hide');
+            }
+        
+
+        },
+
+        created:function(){
+            console.log("created");
+            this.GetSlavePath(this.now_path);
+            WSConnectNotice();
+        },
+
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

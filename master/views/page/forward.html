@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h4><b>网络代理</b></h4>
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" @click="OpenCreateHttpsProxyModal()">创建Http/s代理</button>
+                    <button type="button" class="btn btn-default" @click="OpenCreateSocket5ProxyModal()">创建socket5代理</button>
+                    <button type="button" class="btn btn-default" @click="OpenCreateTCPForwardModal()">创建TCP网络转发</button>
+                </div>
+
+                <hr>
+                <h4><b>TCP网络转发列表</b></h4>
+                <button type="button" class="btn btn-default" @click="TCPForwardRefresh()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IP</th>
+                            <th>Port</th>
+                            <th>Date</th>
+                            <th>IsClose</th>
+                            <th>IsDel</th>
+                            <th>备注</th>
+                            <th>转发表</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in tcp_forward">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.Port}}</td>
+                            <td>{{item.Create}}</td>
+                            <td>{{item.IsClose}}</td>
+                            <td>{{item.IsDel}}</td>
+                            <td>{{item.Note}}</td>
+                            <td>{{item.ForwardTable}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="OpenTCPForwardSwitchModal(item)">修改转发表</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="TCPForwardStop(item)">暂停</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="TCPForwardContinue(item)">继续</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="TCPForwardRemove(item)">删除</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <hr>
+                <h4><b>Http/s代理列表</b></h4>
+                <button type="button" class="btn btn-default" @click="HttpsProxyRefresh()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IP</th>
+                            <th>Port</th>
+                            <th>Date</th>
+                            <th>IsClose</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in https_proxy">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.Port}}</td>
+                            <td>{{item.Create}}</td>
+                            <td>{{item.IsClose}}</td>
+                            <td>{{item.Note}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="HttpsProxyStop(item)">暂停</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="HttpsProxyContinue(item)">继续</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="HttpsProxyRemove(item)">删除</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+                <hr>
+                <h4><b>socket5代理列表</b></h4>
+                <button type="button" class="btn btn-default" @click="Socket5ProxyRefresh()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IP</th>
+                            <th>Port</th>
+                            <th>Date</th>
+                            <th>IsClose</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in socket5_proxy">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.Port}}</td>
+                            <td>{{item.Create}}</td>
+                            <td>{{item.IsClose}}</td>
+                            <td>{{item.Note}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="Socket5ProxyStop(item)">暂停</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Socket5ProxyContinue(item)">继续</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Socket5ProxyRemove(item)">删除</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建HTTP/s网络代理 弹出层 -->
+    <div class="modal fade" id="CreateHttpsProxyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">创建HTTP/s网络代理</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="CreateHttpsProxy">
+                        <div class="input-group">
+                            <span class="input-group-addon">主机选择(部署在哪个主机上)</span>
+                            <select name="slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">端口</span>
+                            <input type="text" name="port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">Name</span>
+                            <input type="text" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">备注</span>
+                            <input type="text" name="note" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="CreateHttpsProxySubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建Socket5网络代理 弹出层 -->
+    <div class="modal fade" id="CreateSocket5ProxyModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">创建Socket5网络代理</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="CreateSocket5Proxy">
+                        <div class="input-group">
+                            <span class="input-group-addon">主机选择(部署在哪个主机上)</span>
+                            <select name="slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">端口</span>
+                            <input type="text" name="port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">Name</span>
+                            <input type="text" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">备注</span>
+                            <input type="text" name="note" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="CreateSocket5ProxySubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 创建TCP转发 弹出层 -->
+    <div class="modal fade" id="CreateTCPForwardModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">创建TCP转发(负载默认:随机)</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="CreateTCPForward">
+                        <div class="input-group">
+                            <span class="input-group-addon">主机选择(部署在哪个主机上)</span>
+                            <select name="slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">端口</span>
+                            <input type="text" name="port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">转发表</span>
+                            <textarea class="form-control" rows="3" name="forward_table" placeholder="多个;隔开. 如：127.0.0.1:12301;127.0.0.1:12302"></textarea>
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">Name</span>
+                            <input type="text" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">备注</span>
+                            <input type="text" name="note" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="CreateTCPForwardSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改TCP转发表 弹出层 -->
+    <div class="modal fade" id="TCPForwardSwitchModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">修改TCP转发表</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="input-group">
+                            <span class="input-group-addon">Name</span>
+                            <input type="text" id="tcpForward_name" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1" readonly="readonly">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">转发表</span>
+                            <textarea class="form-control" rows="3" id="tcpForward_table" name="forward_table" placeholder="多个;隔开. 如：127.0.0.1:12301;127.0.0.1:12302"></textarea>
+                        </div>
+                        <br>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="TCPForwardSwitch()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_list: {},
+            https_proxy: [],
+            socket5_proxy: [],
+            tcp_forward: [],
+        },
+
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            OpenCreateHttpsProxyModal:function() {
+                const t = this;
+                $("#CreateHttpsProxyModal").modal('show');
+            },
+
+            CreateHttpsProxySubmit:function () {
+                const t = this;
+                var fromData = new FormData($("#CreateHttpsProxy")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.CreateHttpsProxy(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#CreateHttpsProxyModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("创建失败");
+                    }
+                });
+            },
+
+            GetHttpsProxyList: function (){
+                const t = this;
+                AjaxRequestText(t.url.GetHttpsProxyList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.https_proxy = jsonObj.body.data;
+                    console.log(t.https_proxy);
+                });
+            },
+
+            HttpsProxyRefresh: function () {
+                const t = this;
+                t.GetHttpsProxyList();
+            },
+
+            HttpsProxyStop: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.HttpsProxyStop(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            HttpsProxyContinue: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.HttpsProxyContinue(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            HttpsProxyRemove: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.HttpsProxyRemove(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+
+            OpenCreateSocket5ProxyModal:function() {
+                const t = this;
+                $("#CreateSocket5ProxyModal").modal('show');
+            },
+
+            CreateSocket5ProxySubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#CreateSocket5Proxy")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.CreateSocket5Proxy(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#CreateSocket5ProxyModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("创建失败");
+                    }
+                });
+            },
+
+            GetSocket5ProxyList: function (){
+                const t = this;
+                AjaxRequestText(t.url.GetSocket5ProxyList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.socket5_proxy = jsonObj.body.data;
+                    console.log(t.socket5_proxy);
+                });
+            },
+
+            Socket5ProxyRefresh: function (){
+                const t = this;
+                t.GetSocket5ProxyList();
+            },
+
+            Socket5ProxyStop: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.Socket5ProxyStop(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            Socket5ProxyContinue: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.Socket5ProxyContinue(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            Socket5ProxyRemove: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.Socket5ProxyRemove(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            OpenCreateTCPForwardModal: function () {
+                const t = this;
+                $("#CreateTCPForwardModal").modal('show');
+            },
+
+            CreateTCPForwardSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#CreateTCPForward")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.CreateTCPForward(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#CreateTCPForwardModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("创建失败");
+                    }
+                });
+            },
+
+            GetTCPForwardList: function (){
+                const t = this;
+                AjaxRequestText(t.url.GetTCPForwardList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.tcp_forward = jsonObj.body.data;
+                    console.log(t.tcp_forward);
+                });
+            },
+
+            TCPForwardRefresh: function () {
+                const t = this;
+                t.GetTCPForwardList();
+            },
+
+            OpenTCPForwardSwitchModal: function (item) {
+                const t = this;
+                $("#tcpForward_name").val(item.Name);
+                $("#TCPForwardSwitchModal").modal('show');
+            },
+
+            TCPForwardSwitch: function(){
+                const t = this;
+                var name = $("#tcpForward_name").val();
+                var table = $("#tcpForward_table").val();
+                AjaxRequestText(t.url.TCPForwardSwitch(name, table), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            TCPForwardStop: function(item) {
+                const t = this;
+                AjaxRequestText(t.url.TCPForwardStop(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            TCPForwardContinue: function(item) {
+                const t = this;
+                AjaxRequestText(t.url.TCPForwardContinue(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+
+            TCPForwardRemove: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.TCPForwardRemove(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetHttpsProxyList();
+                });
+            },
+        },
+
+        created:function(){
+            console.log("created");
+            this.GetSlaveList();
+            this.GetHttpsProxyList();
+            this.GetSocket5ProxyList();
+            this.GetTCPForwardList();
+            WSConnectNotice();
+        },
+
+        mounted:function(){
+
+        },
+    })
+
+
+</script>
+
+</body>
+</html>

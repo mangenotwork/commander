@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>可执行文件:  {[.executableName]}</b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <a type="button" class="btn btn-default" href="/executable">返回</a>
+                    <button type="button" class="btn btn-default"  @click="Deploy()">部署并执行</button>
+                </div>
+                <hr>
+                目录结构:
+                <br>
+                <br>
+                <div class="row">
+
+                    <div class="col-md-3" style="padding: 12px;" v-for="item in dir">
+                        <span v-if="item.IsDir === false && item.IsConf === true" class="glyphicon glyphicon-cog" aria-hidden="true" style="font-size: 39px;"></span>
+                        <span v-else-if="item.IsDir === false && item.IsConf === false" class="glyphicon glyphicon-file" aria-hidden="true" style="font-size: 39px;"></span>
+                        <span v-else-if="item.IsDir === true && item.IsConf === false" class="glyphicon glyphicon-folder-close" aria-hidden="true" style="font-size: 39px;"></span>
+                        <br>
+                        {{item.FileName}}
+                        <br>
+                        <button v-if="item.IsDir == false && item.IsConf == true"  type="button" class="btn btn-default" @click="OpenConfModal(item)">修改配置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改配置文件 -->
+    <div class="modal fade" id="confModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">修改配置文件</h4>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" id="conf_data" rows="20"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="ConfUpdate()">修改</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 部署可执行文件 弹出层 -->
+    <div class="modal fade" id="DeployExecutableModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">部署可执行文件</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="deploy_executable">
+                        <div class="input-group">
+                            <span class="input-group-addon">Name</span>
+                            <input type="text" id="deploy_executable_name" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1" readonly="readonly">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">执行命令</span>
+                            <input type="text" id="deploy_executable_cmd" name="cmd" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">执行环境变量</span>
+                            <input type="text" id="deploy_executable_env" name="env" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">备注</span>
+                            <input type="text" name="note" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">选择主机</span>
+                            <select name="slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <br>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="DeploySubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            dir: [],
+            now_conf: "",
+            slave_list: {},
+        },
+        methods: {
+            GetDir: function () {
+
+                const t = this;
+                AjaxRequestText(t.url.ExecutableGetDir("{[.executableName]}"), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.dir = jsonObj.body.data;
+                    console.log(t.dir);
+                });
+            },
+
+            OpenConfModal: function (item) {
+                const t = this;
+
+                AjaxRequestText(t.url.ExecutableGetConfData("{[.executableName]}", item.FileName), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.now_conf = item.FileName;
+                    $("#conf_data").text(jsonObj.body.data);
+                    $("#confModal").modal("show");
+                });
+
+            },
+
+            ConfUpdate: function () {
+                const t = this;
+                var data = {
+                    "name": "{[.executableName]}",
+                    "conf_name": t.now_conf,
+                    "new_conf": $("#conf_data").val()
+                }
+                var dataJson = JSON.stringify(data)
+                AjaxRequest(
+                    t.url.ExecutableGetConfUpdate(),
+                    dataJson,
+                    "POST",
+                    function(d){
+                        console.log(d);
+                        $("#confModal").modal('hide');
+                    }
+                );
+            },
+
+            Deploy:function () {
+                const t = this;
+                $('#deploy_executable_name').val("{[.executableName]}");
+                $('#deploy_executable_cmd').val("{[.cmd]}");
+                $('#deploy_executable_env').val("{[.env]}");
+                $('#DeployExecutableModal').modal('show');
+
+            },
+
+            DeploySubmit:function () {
+                const t = this;
+                var fromData = new FormData($("#deploy_executable")[0]);
+                console.log(fromData);
+
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ExecutableDeploy(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#DeployExecutableModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            GetSlaveList:function (){
+                const t = this;
+                const url = "/slave/select";
+                const data = {};
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetDir();
+            this.GetSlaveList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+        },
+    })
+</script>
+
+</body>
+</html>

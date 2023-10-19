@@ -1,0 +1,30 @@
+# http server 端口
+httpServer:
+  prod: 18888
+
+# udp server 端口
+udpServer:
+  prod: 16666
+
+# tcp server 端口
+tcpServer:
+  prod: 17777
+
+# 可执行文件保存路径
+exeStoreHousePath: "/media/ManGe/fe3b15b2-5de5-42d6-98ce-ed93b8af992b/exeStoreHouse"
+
+# 项目的可执行文件保存路径
+projectPath: "/media/ManGe/fe3b15b2-5de5-42d6-98ce-ed93b8af992b/projectPath"
+
+# JWT  secret & expire
+jwt:
+  secret: asdasd786251ashdgjdbd
+  expire: 86400
+
+# 数据持久化保存路径
+# data 常规数据持久化
+# performance 性能采集持久化
+dbPath:
+  data: "/media/ManGe/fe3b15b2-5de5-42d6-98ce-ed93b8af992b/master_db/data.db"
+  performance: "/media/ManGe/fe3b15b2-5de5-42d6-98ce-ed93b8af992b/master_db/performance.db"
+

@@ -1,0 +1,59 @@
+<h4 id="Docker_Images"><b>Docker Images</b></h4>
+<button type="button" class="btn btn-default" @click="ImagesRefresh()" >刷新数据</button>
+<div class="table-responsive">
+    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+        <thead>
+        <tr>
+            <th style="width: 10%;">Created</th>
+            <th style="width: 20%;">Id</th>
+            <th style="width: 20%;">Labels</th>
+            <th style="width: 20%;">RepoTags</th>
+            <th style="width: 10%;">Size</th>
+            <th style="width: 20%;">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="item in images">
+            <td>{{item.Created | timestampToTime}}</td>
+            <td>{{item.Id}}</td>
+            <td>{{item.Labels}}</td>
+            <td>{{item.RepoTags}}</td>
+            <td>{{item.Size}}</td>
+            <td>
+                <button type="button" class="btn btn-default btn-sm" @click="OpenImageModal(item)"> 查看详情</button>
+                <button type="button" class="btn btn-default btn-sm" @click="ImageRm(item.Id)">删除</button>
+                <button type="button" class="btn btn-default btn-sm" @click="DeployImage(item)">部署这个镜像</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 镜像 详情弹出层 -->
+<div class="modal fade" id="DockerImageModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="width: 800px;">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Image Info</h4>
+            </div>
+            <div class="modal-body">
+                <dl class="dl-horizontal">
+                    <dt>Containers</dt><dd>{{now_image.Containers}}</dd>
+                    <dt>Created</dt><dd>{{now_image.Created}}</dd>
+                    <dt>Id</dt><dd>{{now_image.Id}}</dd>
+                    <dt>Labels</dt><dd>{{now_image.Labels}}</dd>
+                    <dt>ParentId</dt><dd>{{now_image.ParentId}}</dd>
+                    <dt>RepoDigests</dt><dd>{{now_image.RepoDigests}}</dd>
+                    <dt>RepoTags</dt><dd>{{now_image.RepoTags}}</dd>
+                    <dt>SharedSize</dt><dd>{{now_image.SharedSize}}</dd>
+                    <dt>Size</dt><dd>{{now_image.Size}}</dd>
+                    <dt>VirtualSize</dt><dd>{{now_image.VirtualSize}}</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>当前主机: {{slave_ip}} {{msg}}</b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#DockerRunModal">部署容器</button>
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#DockerPullModal">拉取镜像</button>
+                    <button type="button" class="btn btn-default">(TODO)上传镜像到该主机</button>
+                    <a type="button" class="btn btn-default" href="#Docker_Container">容器列表</a>
+                    <a type="button" class="btn btn-default" href="#Docker_Images">镜像列表</a>
+                </div>
+
+                <hr>
+                <h4><b>切换主机</b></h4>
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-sm-4">
+                            <select id="switch_slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <button type="button" class="btn btn-default" @click="Switch()">切换</button>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <hr>
+
+                {[template "_docker_info.html"]}
+                <br>
+                <br>
+                {[template "_docker_container.html"]}
+                <br>
+                <br>
+                {[template "_docker_images.html"]}
+                <br>
+                <br>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 部署容器 弹出层 -->
+    <div class="modal fade" id="DockerRunModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">部署容器</h4>
+                </div>
+                <div class="modal-body">
+                <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">镜像</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_image" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">账号</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_image_user" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">密码</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_image_pass" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">端口80:80(多个使用;隔开)</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Name</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Env(多个使用;隔开)</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_env" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Volume(hostDir:containerDir 多个使用;隔开)</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="container_volume" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">是否 always </label>
+                        <div class="col-sm-9">
+                            <input type="checkbox" id="is_always" >
+                        </div>
+                    </div>
+                </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="DockerRun()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 镜像部署 弹出层-->
+    <div class="modal fade" id="DockerImageRunModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">镜像部署</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">镜像</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="image_id" class="form-control" placeholder="" aria-describedby="basic-addon1" readonly="readonly">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">端口80:80(多个使用;隔开)</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="image_container_port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Name</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="image_container_name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Env(多个使用;隔开)</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="image_container_env" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">是否 always </label>
+                        <div class="col-sm-9">
+                            <input type="checkbox" id="image_is_always" > Check me out
+                        </div>
+                    </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="DockerImagesRun()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 拉取镜像 弹出层 -->
+    <div class="modal fade" id="DockerPullModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">拉取镜像</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">镜像</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="image" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">账号</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">密码</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="pass" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <br>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="DockerPull()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_list: {},
+            slave_ip: "{[.Slave]}",
+            docker_info: {},
+            images: {},
+            container: {},
+            container_ids:[],
+            msg: "{[.Msg]}",
+            now_container: {},
+            now_image:{},
+            container_top:{},
+            now_container_id: "",
+        },
+        methods: {
+            GetDockerInfo:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerInfo(t.slave_ip), data, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.docker_info = jsonObj.body.data;
+                });
+            },
+
+            // docker images
+            GetImages:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerImages(t.slave_ip), data, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    t.images = jsonObj.body.data;
+                    console.log(t.images);
+                });
+            },
+
+            // docker ps
+            GetContainer:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerPs(t.slave_ip), data, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.container_ids = [];
+                    t.container = jsonObj.body.data;
+                    for (v in t.container) {
+                        console.log(t.container[v]);
+                        t.container_ids.push(t.container[v].Id);
+                    }
+                });
+            },
+
+            GetSlaveList:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.SlaveSelect(), data, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Switch:function (){
+                var newSlave = $('#switch_slave').val();
+                console.log(newSlave);
+                window.location.href="/docker/"+newSlave;
+            },
+
+            OpenContainerModal:function (data){
+                const t = this;
+                t.now_container = data;
+                $('#DockerContainerModal').modal('show');
+            },
+
+            OpenImageModal:function (data){
+                const t = this;
+                t.now_image = data;
+                $('#DockerImageModal').modal('show');
+            },
+
+            // docker stop
+            ContainerStop:function (id){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerStop(t.slave_ip, id), data, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    console.log(dObj.body);
+                    console.log(dObj.body.data);
+                    Message(dObj.body.data, "warning");
+                    t.GetDockerInfo();
+                    t.GetContainer();
+                });
+            },
+
+            // docker rm
+            ContainerRm:function (id){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerRm(t.slave_ip, id), data, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    Message(dObj.body.data, "warning");
+                    t.GetDockerInfo();
+                    t.GetContainer();
+                });
+            },
+
+            // docker rmi
+            ImageRm:function (id){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.DockerRmi(t.slave_ip, id), data, "GET", function(d){
+                    console.log(d);
+                    if (d == "{}") {
+                        Message("删除失败", "danger");
+                        return
+                    }
+                    var dObj = JSON.parse(d);
+                    Message(dObj.body.data, "warning");
+                    t.GetDockerInfo();
+                    t.GetImages();
+                });
+            },
+
+            // docker log
+            ContainerLog:function (id){
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/container/log?slave="+t.slave_ip+"&container="+id;
+            },
+
+            // docker pull
+            DockerPull:function (){
+                console.log("docker pull");
+                const t = this;
+
+                var image = $('#image').val();
+                var name = $('#name').val();
+                var pass = $('#pass').val();
+
+                console.log(image, name, pass);
+                AjaxRequestText(t.url.DockerPull(t.slave_ip, image, name, pass), {}, "GET", function(d){
+                    $('#DockerPullModal').modal('hide');
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    console.log(dObj);
+                    Alert(dObj.msg, "warning");
+                });
+            },
+
+            // docker run
+            DockerRun: function () {
+                console.log("docker run");
+                const t = this;
+
+                var container_image = $('#container_image').val();
+                var container_image_user = $('#container_image_user').val();
+                var container_image_pass = $('#container_image_pass').val();
+                var container_port = $('#container_port').val();
+                var container_name = $('#container_name').val();
+                var container_env = $('#container_env').val();
+                var container_volume = $("#container_volume").val();
+                var is_always = $('#is_always').is(':checked');
+
+                var data = {
+                    "image": container_image,
+                    "image_user": container_image_user,
+                    "image_pass": container_image_pass,
+                    "container_port": container_port,
+                    "container_name": container_name,
+                    "container_env": container_env,
+                    "container_volume": container_volume,
+                    "is_always": is_always
+                }
+                var dataJson = JSON.stringify(data)
+                AjaxRequest(
+                    t.url.DockerRun(t.slave_ip),
+                    dataJson,
+                    "POST",
+                    function(d){
+                        $('#DockerRunModal').modal('hide')
+                        console.log(d);
+                        // var dObj = JSON.parse(d);
+                        // console.log(dObj);
+                        Alert(d.msg, "warning");
+                    }
+                );
+            },
+
+            ContainerRefresh:function () {
+                const t = this;
+                this.GetContainer();
+            },
+
+            ImagesRefresh:function () {
+                const t = this;
+                this.GetImages();
+            },
+
+            // docker top
+            ContainerTop:function (id){
+                const t = this;
+                AjaxRequestText(t.url.DockerTop(t.slave_ip, id), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    t.container_top = dObj.body.data;
+                    $('#DockerContainerTopModal').modal('show');
+                });
+            },
+
+            ContainerRenameOpen:function (id) {
+                const t = this;
+                t.now_container_id = id;
+                $('#ContainerRenameModal').modal('show');
+            },
+
+            // docker rename
+            ContainerRename:function () {
+                const t = this;
+                var newName = $("#new_name").val();
+                AjaxRequestText(t.url.DockerRename(t.slave_ip, t.now_container_id, newName), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    $('#ContainerRenameModal').modal('hide');
+                    Alert(dObj.body.data, "warning");
+                    t.GetContainer();
+                });
+            },
+
+            // docker restart
+            ContainerRestart: function (id) {
+                const t = this;
+                AjaxRequestText(t.url.DockerRestart(t.slave_ip, id), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    Alert(dObj.body.data, "warning");
+                    t.GetContainer();
+                });
+            },
+
+            // docker states
+            GetDockerStates: function () {
+                const t = this;
+                console.log("GetDockerStates");
+                console.log(t.container_ids);
+                console.log(t.container_ids.join());
+                AjaxRequestText(t.url.DockerStates(t.slave_ip, t.container_ids.join()), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    for (i in dObj.body.data) {
+                        $('#'+dObj.body.data[i].ContainerId + "_cpu").text(dObj.body.data[i].CPU);
+                        $('#'+dObj.body.data[i].ContainerId + "_cpu_v").attr("style", "width: "+dObj.body.data[i].CPU+"%;");
+                        $('#'+dObj.body.data[i].ContainerId + "_mem").text(dObj.body.data[i].MEMUsage+"/"+dObj.body.data[i].MEMLimit);
+                        $('#'+dObj.body.data[i].ContainerId + "_mem_n").text(dObj.body.data[i].MEM);
+                        $('#'+dObj.body.data[i].ContainerId + "_mem_v").attr("style", "width: "+dObj.body.data[i].MEM+"%;");
+                    }
+                });
+
+            },
+
+            ContainerMonitor: function (id){
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location=t.url.ContainerMonitor(t.slave_ip, id);
+            },
+
+            Test:function (){
+                const t = this;
+                console.log("Test")
+                console.log(t.container[0].mem_limit)
+                t.container[0].mem_limit = "100000";
+                console.log(t.container[0].mem_limit)
+            },
+            DeployImage: function (item) {
+                // TODO
+                $("#image_id").val(item.Id);
+                $("#DockerImageRunModal").modal('show');
+
+            },
+            DockerImagesRun: function () {
+                // /docker/images/deploy
+                console.log("docker run");
+                const t = this;
+
+                var image_id = $('#image_id').val();
+                var container_port = $('#image_container_port').val();
+                var container_name = $('#image_container_name').val();
+                var container_env = $('#image_container_env').val();
+                var is_always = $('#image_is_always').is(':checked');
+
+                var data = {
+                    "slave": t.slave_ip,
+                    "image_id": image_id,
+                    "container_port": container_port,
+                    "container_name": container_name,
+                    "container_env": container_env,
+                    "is_always": is_always
+                }
+                var dataJson = JSON.stringify(data)
+                AjaxRequest(
+                    t.url.DockerImageRun(),
+                    dataJson,
+                    "POST",
+                    function(d){
+                        $('#DockerImageRunModal').modal('hide')
+                        console.log(d);
+                        Alert(d.msg, "warning");
+                    }
+                );
+            },
+
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetDockerInfo();
+            this.GetImages();
+            this.GetContainer();
+            this.GetSlaveList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+            this.timer = setInterval(() => {
+                console.log("update GetSlveInfo");
+                this.GetDockerStates();
+            }, 30000)
+        },
+        filters:{
+            // 计算时间返回 yyyy-MM-dd h:m:s 格式的方法
+            timestampToTime(timestamp){
+                // 计算年月日时分的函数
+                var date = new Date(timestamp*1000)
+                var Y = date.getFullYear() + '-'
+                var M = (date.getMonth() + 1) + '-'
+                var D = date.getDate() + ' '
+                var h = date.getHours() + ':'
+                var m = date.getMinutes() + ':'
+                var s = date.getSeconds()
+                return Y + M + D + h + m + s
+            }
+        },
+    })
+</script>
+
+</body>
+</html>

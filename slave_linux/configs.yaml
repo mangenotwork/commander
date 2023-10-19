@@ -1,0 +1,26 @@
+# master UDP 通讯地址
+master:
+  #host: 192.168.3.228
+  host: 127.0.0.1
+  port: 16666
+
+# master HTTP通讯地址
+masterHttp: "http://192.168.3.228:18888"
+
+# 可执行文件保存路径
+exeStoreHousePath: "/home/exeStoreHousePath_Linux/"
+
+# 可执行文件日志保存路径
+exeStoreHouseLogs: "/home/exeStoreHouseLogs/"
+
+# 项目的可执行文件保存路径
+projectExeStoreHousePath: "/home/projectExeStoreHousePath_Linux/"
+
+# 数据持久化保存路径
+dbPath:
+  data: "/home/slave_linux_db/data.db"
+
+# 文件服务
+fileServer:
+  port: 18889
+  secret: "jsabweuhfdhjadsghja"

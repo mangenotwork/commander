@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>缓存管理</b></h4>
+                缓存大小: {{size}} 比特
+
+                <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                    <thead>
+                    <tr>
+                        <th style="width: 10%;">Data</th>
+                        <th style="width: 20%;">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="item in list">
+                        <td>{{item}}</td>
+                        <td>
+                            <button type="button" class="btn btn-default btn-sm" @click="CacheDelete(item)">删除</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url : new Url(),
+            size: 0,
+            list: [],
+        },
+        methods: {
+            // 获取缓存大小
+            GetCacheSize:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.CacheSize(), data, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.size = jsonObj.body.data;
+                });
+            },
+
+            // 获取缓存列表
+            GetCacheList:function (){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.CacheList(), data, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.list = jsonObj.body.data;
+                });
+            },
+
+            // 删除缓存
+            CacheDelete:function (item){
+                const t = this;
+                const data = {};
+                AjaxRequestText(t.url.CacheDelete(item), data, "GET", function(d){
+                    console.log(d);
+                    this.GetCacheSize();
+                    this.GetCacheList();
+                });
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetCacheSize();
+            this.GetCacheList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

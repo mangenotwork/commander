@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4>
+                    <a type="button" href="/project">
+                        <span class="glyphicon glyphicon-arrow-left" aria-hidden="true" style="font-size: 24px;width: 36px;"></span>
+                    </a>
+                    <b>{{project}} 项目容器列表 </b>
+                </h4>
+
+<!--                <div class="btn-group" role="group" aria-label="...">-->
+<!--                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#">功能按钮1</button>-->
+<!--                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#">功能按钮2</button>-->
+<!--                </div>-->
+
+                <hr>
+
+                <h4><b>容器列表</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshDocker()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th >项目名称</th>
+                            <th >所在主机</th>
+                            <th >任务ID</th>
+                            <th >容器ID</th>
+                            <th >端口映射</th>
+                            <th >操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in container_list">
+                            <td>{{item.Project}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.TaskID}}</td>
+                            <td>{{item.ContainerId}}</td>
+                            <td>{{item.Port}}</td>
+                            <td>
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="OpenContainerModal(item)"> 查看详情</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ContainerStop(item)">停止</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ContainerRm(item)">停止并删除</button>-->
+                                <button type="button" class="btn btn-default btn-sm" @click="ContainerLog(item)">查看日志</button>
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ContainerTop(item)">查看进程</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ContainerRenameOpen(item)">修改名称</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ContainerRestart(item)">重启</button>-->
+                                <button type="button" class="btn btn-default btn-sm" @click="ContainerMonitor(item)">实时监控性能</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            project: "{[.project]}",
+            container_list: [],
+        },
+        methods: {
+            GetList: function () {
+                const t = this;
+                AjaxRequestText(t.url.ProjectDockerContainer(t.project), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.container_list = jsonObj.body.data;
+                    console.log(t.container_list);
+                });
+            },
+
+            // TODO 重新写
+            OpenContainerModal: function () {
+
+            },
+
+            // docker stop
+            ContainerStop:function (item){
+                const t = this;
+                AjaxRequestText(t.url.DockerStop(item.Slave, item.ContainerId), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    console.log(dObj.body);
+                    console.log(dObj.body.data);
+                    Message(dObj.body.data, "warning");
+                    t.GetDockerInfo();
+                    t.GetContainer();
+                });
+            },
+
+            // docker rm
+            ContainerRm:function (item){
+                const t = this;
+                AjaxRequestText(t.url.DockerRm(item.Slave, item.ContainerId), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    Message(dObj.body.data, "warning");
+                    t.GetDockerInfo();
+                    t.GetContainer();
+                });
+            },
+
+            // docker log
+            ContainerLog:function (item){
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/container/log?slave="+item.Slave+"&container="+item.ContainerId;
+            },
+
+            // docker top
+            ContainerTop:function (item){
+                const t = this;
+                AjaxRequestText(t.url.DockerTop(item.Slave, item.ContainerId), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    t.container_top = dObj.body.data;
+                    $('#DockerContainerTopModal').modal('show');
+                });
+            },
+
+            ContainerRenameOpen:function (item) {
+                const t = this;
+                t.now_container_id = item;
+                $('#ContainerRenameModal').modal('show');
+            },
+
+            // docker restart
+            ContainerRestart: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.DockerRestart(item.Slave, item.ContainerId), {}, "GET", function(d){
+                    console.log(d);
+                    var dObj = JSON.parse(d);
+                    Alert(dObj.body.data, "warning");
+                    t.GetContainer();
+                });
+            },
+
+            ContainerMonitor: function (item){
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/container/monitor?slave="+item.Slave+"&container="+item.ContainerId;
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

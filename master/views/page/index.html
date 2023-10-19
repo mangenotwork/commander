@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+    <div class="row">
+
+        {[template "__sidebar.html" .]}
+
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+            <h4><b>面板</b></h4>
+            <div class="row">
+                <div class="col-md-2" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="Slave(服务器)数量" href="/slave/0">
+                        <span class="glyphicon glyphicon-hdd" aria-hidden="true"></span> 服务器数量 {[.slave]}
+                    </a>
+                </div>
+                <div class="col-md-2" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="项目数量" href="/project">
+                        <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> 项目数量 {[.project]}
+                    </a>
+                </div>
+                <div class="col-md-2" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="报警数量" href="/monitor"
+                       {[if ne .alarm 0]}
+                        style="color:red;"
+                       {[end]}
+                    >
+                        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> 报警数量 {[.alarm]}
+                    </a>
+                </div>
+<!--                <div class="col-md-2" style="padding: 12px;">-->
+<!--                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"-->
+<!--                       data-placement="top" title="网关数量" href="/gateway">-->
+<!--                        <span class="glyphicon glyphicon-indent-left" aria-hidden="true"> {[.gateway]}</span>-->
+<!--                    </a>-->
+<!--                </div>-->
+                <div class="col-md-2" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="可执行文件" href="/executable">
+                        <span class="glyphicon glyphicon-file" aria-hidden="true"></span> 可执行文件 {[.executable]}
+                    </a>
+                </div>
+
+            </div>
+
+            <hr>
+
+            <h4><b>功能</b></h4>
+
+            <div class="row">
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="Docker管理" href="/docker/0">
+                        <span class="glyphicon glyphicon-th" aria-hidden="true"></span>
+                    </a>
+                </div>
+
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="网络代理" href="/forward">
+                        <span class="glyphicon glyphicon-globe" aria-hidden="true"></span>
+                    </a>
+                </div>
+
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="项目网关" href="/gateway">
+                        <span class="glyphicon glyphicon-indent-left" aria-hidden="true"></span>
+                    </a>
+                </div>
+
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="软件部署" href="/deployed/0">
+                        <span class="glyphicon glyphicon-save" aria-hidden="true"></span>
+                    </a>
+                </div>
+
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                            data-placement="top" title="使用手册" href="https://mange.work/blog?id=57" target="_blank">
+                        <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                    </a>
+                </div>
+                <div class="col-md-1" style="padding: 12px;">
+                    <button type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                            data-placement="top" title="社区(TODO)" >
+                        <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="col-md-1" style="padding: 12px;">
+                    <a type="button" class="btn btn-default btn-lg" aria-label="Left Align" data-toggle="tooltip"
+                       data-placement="top" title="ManGe主页"  href="https://mange.work" >
+                        <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+                    </a>
+                </div>
+
+            </div>
+            <hr>
+
+            <h4><b>服务器列表  {[.slave]} </b></h4>
+            <div class="row">
+
+                <div v-for="item in slve_info" class="jumbotron">
+                    <span style="font-size: 16px;">
+                        <a :href="'/slave/'+item.ip" style="font-size: 18px;color: #333333;" target="_blank">[ {{item.host_name}} ]  {{item.ip}}</a>
+                            <span class="label label-success" v-if="item.online == '在线'">{{item.online}}</span>
+                            <span class="label label-danger" v-else>{{item.online}}</span>
+                         <span class="label label-default">{{item.sys_type}}</span>
+                         <span class="label label-default">slave版本: {{item.slave_version}}</span>
+
+                    <div class="row" style="margin-left: 2px;margin-top: 8px;margin-bottom: 8px;">
+                        <div class="btn-group" role="group" aria-label="...">
+
+                            <a class="btn btn-default" role="button" @click="SlaveInfo(item)"
+                               aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="查看配置">
+                                <span class="glyphicon glyphicon-option-vertical"></span></a>
+
+                            <a class="btn btn-default" :href="'/slave/'+item.ip" role="button" target="_blank"
+                               aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="控制面板">
+                                <span class="glyphicon glyphicon-home"></span> </a>
+
+                            <button class="btn btn-default" @click="OpenSSH(item)" aria-label="Left Align"
+                                    data-toggle="tooltip" data-placement="top" title="在线终端">
+                                <span class="glyphicon glyphicon-blackboard"></span></button>
+
+                            <a class="btn btn-default" :href="'/monitor/'+item.ip" role="button" target="_blank"
+                               aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="在线监控">
+                                <span class="glyphicon glyphicon-scale"></span> </a>
+
+                            <a type="button" class="btn btn-default" :href="'/dir/'+item.ip" target="_blank"
+                               aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="目录&文件">
+                                <span class="glyphicon glyphicon-folder-close"></span></a>
+
+                            <a type="button" class="btn btn-default" :href="'/deployed/'+item.ip" target="_blank"
+                               aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="软件部署">
+                                <span class="glyphicon glyphicon-save"></span></a>
+
+                            <a class="btn btn-default" :href="'/docker/'+item.ip" role="button" target="_blank">Docker</a>
+
+                            <a class="btn btn-default" :href="'/nginx/'+item.ip" role="button" target="_blank">Nginx</a>
+
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-10">
+                            <div class="progress" style="margin-bottom: 2px;">
+                                <span style="font-size: 9px;"> CPU: {{item.now_cpu_rate}}/100</span>
+                                <div class="progress-bar progress-bar-info" role="progressbar" :aria-valuenow="item.now_cpu_rate"
+                                     aria-valuemin="0" aria-valuemax="100" :style="{width: item.now_cpu_rate+`%`}">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-10">
+                            <div class="progress" style="margin-bottom: 14px;">
+                                <span style="font-size: 9px;"> MEM: {{item.now_mem_rate}}/100</span>
+                                <div class="progress-bar progress-bar-info" role="progressbar" :aria-valuenow="item.now_mem_rate"
+                                     aria-valuemin="0" aria-valuemax="100" :style="{width: item.now_mem_rate+`%`}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+        <!-- 服务器 详情弹出层 -->
+        <div class="modal fade" id="SlaveInfoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content" style="width: 900px;">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">Slave Info</h4>
+                    </div>
+                    <div class="modal-body">
+                        <dl class="dl-horizontal">
+                            <dt>ip</dt><dd>{{now_slave.ip}}</dd>
+                            <dt>online</dt><dd>{{now_slave.online}}</dd>
+                            <dt>host_name</dt><dd>{{now_slave.host_name}}</dd>
+                            <dt>sys_type</dt><dd>{{now_slave.sys_type}}</dd>
+                            <dt>os_name</dt><dd>{{now_slave.os_name}}</dd>
+                            <dt>os_num</dt><dd>{{now_slave.os_num}}</dd>
+                            <dt>sys_architecture</dt><dd>{{now_slave.sys_architecture}}</dd>
+                            <dt>cpu_core_number</dt><dd>{{now_slave.cpu_core_number}}</dd>
+                            <dt>cpu_name</dt><dd>{{now_slave.cpu_name}}</dd>
+                            <dt>cpu_id</dt><dd>{{now_slave.cpu_id}}</dd>
+                            <dt>board_id</dt><dd>{{now_slave.board_id}}</dd>
+                            <dt>mem_totle</dt><dd>{{now_slave.mem_totle}}</dd>
+<!--                            <dt>disk</dt><dd>{{now_slave.disk}}</dd>-->
+                            <dt>disk_totle</dt><dd>{{now_slave.disk_totle}}</dd>
+                            <dt>now_cpu_rate</dt><dd>{{now_slave.now_cpu_rate}}</dd>
+                            <dt>now_mem_rate</dt><dd>{{now_slave.now_mem_rate}}</dd>
+                            <dt>has_docker</dt><dd>{{now_slave.has_docker}}</dd>
+                            <dt>docker_version</dt><dd>{{now_slave.docker_version}}</dd>
+                            <dt>commander_slave</dt><dd>{{now_slave.slave_version}}</dd>
+                            <dt>run_time</dt><dd>{{now_slave.run_time}} 秒</dd>
+                            <dt>ldle_time</dt><dd>{{now_slave.ldle_time}} 秒</dd>
+                        </dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ssh 账号密码 -->
+        <div class="modal fade" id="SSHModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content" style="width: 900px;">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">连接ssh</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <span class="input-group-addon">IP</span>
+                            <input type="text" name="ssh_ip" id="ssh_ip" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">端口</span>
+                            <input type="text" name="ssh_port" id="ssh_port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <span class="input-group-addon">User</span>
+                            <input type="text" name="ssh_user" id="ssh_user" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">Password</span>
+                            <input type="password" name="ssh_password" id="ssh_password" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" @click="OpenWs2SSH()">登录</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slve_info: {},
+            socket: {},
+            now_slave: {},
+        },
+        methods: {
+            GetSlveInfo:function (){
+                const t = this;
+                AjaxRequest(t.url.SlaveList(), {}, "GET", function(d){
+                    console.log(d);
+                    t.slve_info = d.body.data;
+                });
+            },
+            SlaveInfo: function (item){
+                const t = this;
+                t.now_slave = item;
+                $("#SlaveInfoModal").modal('show');
+            },
+
+            OpenSSH: function (item) {
+                $("#ssh_ip").val(item.ip);
+                $("#SSHModal").modal('show');
+            },
+
+            OpenWs2SSH: function () {
+                const t = this;
+                $("#SSHModal").modal('hide');
+                var ip = $("#ssh_ip").val();
+                var port = $("#ssh_port").val();
+                var user = $("#ssh_user").val();
+                var password = $("#ssh_password").val();
+
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/ssh?ip="+ip+"&port="+port+"&user="+user+"&password="+password;
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetSlveInfo();
+            WSConnectNotice();
+        },
+        computed: {
+            Width: function(val) {
+                return val + '%';
+            }
+        },
+        mounted:function(){
+            this.timer = setInterval(() => {
+                console.log("update GetSlveInfo");
+                this.GetSlveInfo();
+            }, 60000)
+
+        },
+    })
+</script>
+
+</body>
+</html>

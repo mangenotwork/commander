@@ -1,0 +1,480 @@
+<script>
+    function AjaxRequest(url, data, method, success) {
+        $.ajax({
+            url: url,
+            type: method,
+            data: data,
+            dataType: "JSON",
+            contentType: "application/json",
+            async: true,
+            cache: false,
+            success: success,
+            error: function (data) {
+                console.log(data.status + "错误的请求: " + url);
+                console.log(data);
+            }
+        });
+    }
+
+    function AjaxRequestText(url, data, method, success) {
+        $.ajax({
+            url: url,
+            type: method,
+            data: data,
+            dataType: "text",
+            contentType: "text",
+            async: true,
+            cache: false,
+            success: success,
+            error: function (data) {
+                console.log(data.status + "错误的请求: " + url);
+                console.log(data);
+            }
+        });
+    }
+
+    function AjaxRequestTextNotAsync(url, data, method, success) {
+        $.ajax({
+            url: url,
+            type: method,
+            data: data,
+            dataType: "text",
+            contentType: "text",
+            async: false,
+            cache: false,
+            success: success,
+            error: function (data) {
+                console.log(data.status + "错误的请求: " + url);
+                console.log(data);
+            }
+        });
+    }
+
+    /**
+     * 弹出消息框
+     * @param msg 消息内容
+     * @param type 消息框类型  success, info, warning, danger
+     */
+
+    var AlertTimes = 1;
+
+    function AlertClose(a){
+        AlertTimes = Number(a);
+    }
+
+    function Alert(msg, type){
+        if(typeof(type) =="undefined") {
+            type = "success";
+        }
+        var a = 100 - AlertTimes*8;
+        var divElement = $("<div></div>").addClass('alert').addClass('alert-'+type).addClass('alert-dismissible').addClass('col-md-4').addClass('col-md-offset-4');
+        divElement.css({ // 消息框的定位样式
+            "margin-left": "66.6%",
+            "z-index":"1001",
+            "position": "fixed",
+            "top": a+"%"
+        });
+
+        //divElement.text(msg); // 设置消息框的内容
+        var closeBtn = $('<button type="button" class="close" data-dismiss="alert" aria-label="Close" onclick="AlertClose('+AlertTimes+')"><span aria-hidden="true">&times;</span></button>');
+        $(divElement).append(closeBtn);
+        $(divElement).append('<span style="width: 30%;word-break: break-all;white-space: normal;">'+msg+'</span>');
+        $('body').append(divElement);
+
+        AlertTimes++;
+        if (AlertTimes > 11) {
+            AlertTimes = 1;
+        }
+        return divElement;
+    }
+
+    /**
+     * 短暂显示后上浮消失的消息框
+     * @param msg 消息内容
+     * @param type 消息框类型  success, info, warning, danger
+     */
+    function Message(msg, type) {
+        var divElement = Alert(msg, type); // 生成Alert消息框
+        var isIn = false; // 鼠标是否在消息框中
+        divElement.on({ // 在setTimeout执行之前先判定鼠标是否在消息框中
+            mouseover : function(){isIn = true;},
+            mouseout  : function(){isIn = false;}
+        });
+        setTimeout(function() {
+            var IntervalMS = 20; // 每次上浮的间隔毫秒
+            var floatSpace = 60; // 上浮的空间(px)
+            var nowTop = divElement.offset().top; // 获取元素当前的top值
+            var stopTop = nowTop - floatSpace;    // 上浮停止时的top值
+            divElement.fadeOut(IntervalMS * floatSpace); // 设置元素淡出
+            var upFloat = setInterval(function(){ // 开始上浮
+                if (nowTop >= stopTop) { // 判断当前消息框top是否还在可上升的范围内
+                    divElement.css({"top": nowTop--}); // 消息框的top上升1px
+                } else {
+                    clearInterval(upFloat); // 关闭上浮
+                    divElement.remove();    // 移除元素
+                }
+            }, IntervalMS);
+            if (isIn) { // 如果鼠标在setTimeout之前已经放在的消息框中，则停止上浮
+                clearInterval(upFloat);
+                divElement.stop();
+            }
+            divElement.hover(function() { // 鼠标悬浮时停止上浮和淡出效果，过后恢复
+                clearInterval(upFloat);
+                divElement.stop();
+            },function() {
+                divElement.fadeOut(IntervalMS * (nowTop - stopTop)); // 这里设置元素淡出的时间应该为：间隔毫秒*剩余可以上浮空间
+                upFloat = setInterval(function(){ // 继续上浮
+                    if (nowTop >= stopTop) {
+                        divElement.css({"top": nowTop--});
+                    } else {
+                        clearInterval(upFloat); // 关闭上浮
+                        divElement.remove();    // 移除元素
+                    }
+                }, IntervalMS);
+            });
+        }, 3000);
+    }
+
+    // notice WS连接
+    const WS_CONNECT = "ws://127.0.0.1:18888/ws/notice"
+    function WSConnectNotice (){
+        const t = this;
+        t.socket = new WebSocket(WS_CONNECT);
+        //t.socket.binaryType = 'arraybuffer';
+        t.socket.onopen = function(){
+            console.log("已经连接");
+        };
+        t.socket.onerror = function(){
+            console.log("连接发生错误");
+        };
+        t.socket.onclose = function(){
+            console.log("连接已经断开");
+        };
+        t.socket.onmessage = function(event){
+            console.log("收到消息");
+            console.log(event.data);
+            //Message(event.data, "warning");
+            Alert(event.data, "warning");
+        };
+    }
+
+    // 从字符串中删除前n个字符
+    const RemoveStrN = (str, num) => {
+        const { length } = str;
+        if(num > length){
+            return str;
+        };
+        const newStr = str.substr(num, length - num);
+        return newStr;
+    };
+
+    class Url {
+        CacheSize(){
+            return "/api/cache/size";
+        }
+        CacheList(){
+            return "/api/cache/list";
+        }
+        CacheDelete(name) {
+            return "/api/cache/delete?name="+name;
+        }
+        DockerState(slave, container) {
+            return "/api/docker/state?slave="+slave+"&container="+container;
+        }
+        DockerInfo(slave) {
+            return "/api/docker/info?slave="+slave;
+        }
+        DockerImages(slave) {
+            return "/api/docker/images?slave="+slave;
+        }
+        DockerPs(slave) {
+            return "/api/docker/ps?slave="+slave;
+        }
+        SlaveSelect() {
+            return "/api/slave/select";
+        }
+        DockerStop(slave, container) {
+            return "/api/docker/stop?slave="+slave+"&container="+container;
+        }
+        DockerRm(slave, container) {
+            return "/api/docker/rm?slave="+slave+"&container="+container;
+        }
+        DockerRmi(slave, image) {
+            return "/api/docker/rmi?slave="+slave+"&image="+image;
+        }
+        DockerPull(slave, image, name, pass) {
+            return "/api/docker/pull?slave="+slave+"&image="+image+"&name="+name+"&pass="+pass;
+        }
+        DockerRun(slave) {
+            return "/api/docker/run?slave="+slave;
+        }
+        DockerImageRun() {
+            return "/api/docker/images/deploy"
+        }
+        DockerTop(slave, container) {
+            return "/api/docker/top?slave="+slave+"&container="+container;
+        }
+        DockerRename(slave, container, name) {
+            return "/api/docker/rename?slave="+slave+"&container="+container+"&name="+name;
+        }
+        DockerRestart(slave, container) {
+            return "/api/docker/restart?slave="+slave+"&container="+container;
+        }
+        DockerStates(slave, containers) {
+            return "/api/docker/states?slave="+slave+"&containers="+containers;
+        }
+        ContainerMonitor(slave, container) {
+            return "/container/monitor?slave="+slave+"&container="+container;
+        }
+        ExecutableList() {
+            return "/api/executable/list";
+        }
+        ExecutableTask() {
+            return "/api/executable/task";
+        }
+        ExecutableDelete(name) {
+            return "/api/executable/delete?name="+name;
+        }
+        ExecutableUpload() {
+            return "/api/executable/upload";
+        }
+        ExecutableDownload(name) {
+            return "/api/executable/download?name="+name;
+        }
+        ExecutableDeploy() {
+            return "/api/executable/deploy";
+        }
+        ExecutableRunState(slave, pid, task_id) {
+            return "/api/executable/run/state?slave="+slave+"&pid="+pid+"&task_id="+task_id;
+        }
+        ExecutableTaskDelete(slave, pid, task_id) {
+            return "/api/executable/task/delete?slave="+slave+"&pid="+pid+"&task_id="+task_id;
+        }
+        ExecutableTaskRun(slave, pid, name, task_id) {
+            return "/api/executable/task/run?slave="+slave+"&pid="+pid+"&name="+name+"&task_id="+task_id;
+        }
+        ExecutableLogPG(slave, task_id) {
+            return "/executable/log?slave="+slave+"&task_id="+task_id;
+        }
+        ExecutableDir(name) {
+            return "/executable/dir?name="+name;
+        }
+        ExecutableGetDir(name) {
+            return "/api/executable/dir?name="+name;
+        }
+        ExecutableLog(slave, task_id) {
+            return "/api/executable/task/log?slave="+slave+"&task_id="+task_id;
+        }
+        ExecutableGetConfData(name, file) {
+            return "/api/executable/conf/file?name="+name+"&file="+file;
+        }
+        ExecutableGetConfUpdate() {
+            return "/api/executable/conf/update"
+        }
+        ExecutableTaskKill(slave, pid, value, task_id) {
+            return "/api/executable/task/kill?slave="+slave+"&pid="+pid+"&value="+value+"&task_id="+task_id;
+        }
+        ExecutableTaskRestart(slave, pid, value, task_id) {
+            return "/api/executable/task/restart?slave="+slave+"&pid="+pid+"&value="+value+"&task_id="+task_id;
+        }
+        ExecutableTaskPid(slave, pid) {
+            return "/api/executable/task/pid?slave="+slave+"&pid="+pid;
+        }
+        GatewayList() {
+            return "/api/gateway/list";
+        }
+        GatewayDelete(slave, project) {
+            return "/api/gateway/delete?slave="+slave+"&project="+project;
+        }
+        GatewayUpdatePort() {
+            return "/api/gateway/update/port";
+        }
+        NewGatewayAPI() {
+            return "/api/gateway/new";
+        }
+        SlaveList() {
+            return "/api/slave/list";
+        }
+        SlavePortInfo(slave) {
+            return "/api/slave/port/info?slave="+slave;
+        }
+        SlaveProcessKill(slave, pid, value) {
+            return "/api/slave/process/kill?slave="+slave+"&pid="+pid+"&value="+value;
+        }
+        SlaveProcessList(slave, pg) {
+            return "/api/slave/process/list?slave="+slave+"&pg="+pg;
+        }
+        ProjectExecutableCreate() {
+            return "/api/project/executable/create";
+        }
+        ProjectDockerCreate() {
+            return "/api/project/docker/create";
+        }
+        ProjectDockerList() {
+            return "/api/project/docker/list";
+        }
+        ProjectDockerRun(project) {
+            return "/api/project/docker/run?project="+project;
+        }
+        ProjectDockerUpdateImage() {
+            return "/api/project/docker/update/image";
+        }
+        ProjectDockerUpdate() {
+            return "/api/project/docker/update";
+        }
+        ProjectExecutableRun(project) {
+            return "/api/project/executable/run?project="+project;
+        }
+        ProjectExecutableList() {
+            return "/api/project/executable/list";
+        }
+        ProjectDockerUpdateDuplicate() {
+            return "/api/project/docker/update/duplicate";
+        }
+        ProjectDockerContainer(project) {
+            return "/api/project/docker/container?project="+project;
+        }
+        ProjectExecutableTask(project) {
+            return "/api/project/executable/task?project="+project;
+        }
+        SlaveInfo(slave) {
+            return "/api/slave/info?slave="+slave;
+        }
+        SlaveHosts(slave) {
+            return "/api/slave/hosts?slave="+slave;
+        }
+        SlaveHostsUpdate(slave) {
+            return "/api/slave/hosts/update";
+        }
+        SlaveEnvList(slave) {
+            return "/api/slave/env/list?slave="+slave;
+        }
+        TaskList(pg) {
+            return "/api/task/list?pg="+pg;
+        }
+        TaskDelete(id) {
+            return "/api/task/delete?id="+id;
+        }
+        OperateList(pg) {
+            return "/api/operate/list?pg="+pg;
+        }
+        OperateDelete(date) {
+            return "/api/operate/delete?date="+date;
+        }
+        MonitorRuleList(){
+            return "/api/monitor/rule/list";
+        }
+        MonitorRuleCreate(){
+            return "/api/monitor/rule/create";
+        }
+        MonitorRuleModify(){
+            return "/api/monitor/rule/modify";
+        }
+        MonitorAlarmList(pg){
+            return "/api/monitor/alarm/list?pg="+pg;
+        }
+        MonitorAlarmDelete(id){
+            return "/api/monitor/alarm/del?id="+id;
+        }
+        MonitorData(slave) {
+            return "/api/monitor/data?slave="+slave;
+        }
+        InstallDocker(slave) {
+            return "/api/deployed/install/docker?slave="+slave;
+        }
+        RemoveDocker(slave) {
+            return "/api/deployed/remove/docker?slave="+slave;
+        }
+        InstallNginx(slave) {
+            return "/api/deployed/install/nginx?slave="+slave;
+        }
+        RemoveNginx(slave) {
+            return "/api/deployed/remove/nginx?slave="+slave;
+        }
+        CreateHttpsProxy() {
+            return "/api/proxy/http/create";
+        }
+        GetHttpsProxyList() {
+            return "/api/proxy/http/list";
+        }
+        HttpsProxyStop(name) {
+            return "/api/proxy/http/stop?name="+name;
+        }
+        HttpsProxyContinue(name) {
+            return "/api/proxy/http/continue?name="+name;
+        }
+        HttpsProxyRemove(name) {
+            return "/api/proxy/http/remove?name="+name;
+        }
+        CreateSocket5Proxy() {
+            return "/api/proxy/socket5/create";
+        }
+        GetSocket5ProxyList() {
+            return "/api/proxy/socket5/list";
+        }
+        Socket5ProxyStop(name) {
+            return "/api/proxy/socket5/stop?name="+name;
+        }
+        Socket5ProxyContinue(name) {
+            return "/api/proxy/socket5/continue?name="+name;
+        }
+        Socket5ProxyRemove(name) {
+            return "/api/proxy/socket5/remove?name="+name;
+        }
+        CreateTCPForward() {
+            return "/api/forward/tcp/create";
+        }
+        GetTCPForwardList() {
+            return "/api/forward/tcp/list";
+        }
+        TCPForwardSwitch(name, table) {
+            return "/api/forward/tcp/switch?name="+name+"&table="+table;
+        }
+        TCPForwardStop(name) {
+            return "/api/forward/tcp/stop?name="+name;
+        }
+        TCPForwardContinue(name) {
+            return "/api/forward/tcp/continue?name="+name;
+        }
+        TCPForwardRemove(name) {
+            return "/api/forward/tcp/remove?name="+name;
+        }
+        GetSlavePath(slave, path) {
+            return "/api/slave/dir?slave="+slave+"&path="+path;
+        }
+        CatSlaveFile(slave, path) {
+            return "/api/slave/cat?slave="+slave+"&path="+path;
+        }
+        UploadFileToSlave(slave) {
+            return "/api/slave/upload?slave="+slave;
+        }
+        SlaveMkdir(slave, path) {
+            return "/api/slave/mkdir?slave="+slave+"&path="+path;
+        }
+        SlaveDecompressFile(slave, path) {
+            return "/api/slave/decompress?slave="+slave+"&path="+path;
+        }
+        GetNginxInfo(slave) {
+            return "/api/nginx/info?slave="+slave;
+        }
+        NginxStart(slave) {
+            return "/api/nginx/start?slave="+slave;
+        }
+        NginxReload(slave) {
+            return "/api/nginx/reload?slave="+slave;
+        }
+        NginxQuit(slave) {
+            return "/api/nginx/quit?slave="+slave;
+        }
+        NginxStop(slave) {
+            return "/api/nginx/stop?slave="+slave;
+        }
+        NginxCheckConf(slave) {
+            return "/api/nginx/check?slave="+slave;
+        }
+        NginxUpdateConf() {
+            return "/api/nginx/conf/update";
+        }
+    }
+
+</script>

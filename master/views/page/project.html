@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>项目管理</b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" data-toggle="modal" @click="CreateProjectDocker()">新建Docker容器项目</button>
+                    <a type="button" class="btn btn-default" href="/executable" target="_blank">在物理机上部署可执行文件</a>
+
+                </div>
+
+                <hr>
+                <h4><b>Docker容器项目</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshDocker()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th style="width: 10%;">项目名称</th>
+                            <th style="width: 10%;">项目备注</th>
+                            <th style="width: 10%;">端口映射</th>
+                            <th style="width: 10%;">镜像</th>
+                            <th style="width: 10%;">环境变量</th>
+                            <th style="width: 10%;">副本数量</th>
+                            <th style="width: 10%;">网关</th>
+                            <th style="width: 10%;">创建</th>
+                            <th style="width: 10%;">更新</th>
+                            <th style="">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in project_docker_list">
+                            <td>{{item.docker_name}}</td>
+                            <td>{{item.docker_note}}</td>
+                            <td>{{item.docker_port}}</td>
+                            <td>{{item.docker_image}}</td>
+                            <td>{{item.docker_env}}</td>
+                            <td>{{item.docker_duplicate}}</td>
+                            <td>{{item.docker_is_gateway}} | {{item.gateway_port}}</td>
+                            <td>{{item.create_time}}</td>
+                            <td>{{item.update_time}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="ContainerList(item)">查看容器列表</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="UpdateProjectDocker(item)">更新并重启项目</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="UpdateProjectDockerImage(item)">更新镜像</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="UpdateProjectDockerDuplicate(item)">更改副本数量</button>
+                                <a v-if="item.docker_is_gateway=='1'" type="button" class="btn btn-default btn-sm" href="/gateway" >查看网关</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+
+<!--                <h2>可执行文件项目</h2>-->
+<!--                <button type="button" class="btn btn-default" @click="RefreshExecutable()" >刷新数据</button>-->
+<!--                <div class="table-responsive">-->
+<!--                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">-->
+<!--                        <thead>-->
+<!--                        <tr>-->
+<!--                            <th style="width: 10%;">项目名称</th>-->
+<!--                            <th style="width: 10%;">项目备注</th>-->
+<!--                            <th style="width: 10%;">创建时间</th>-->
+<!--                            <th style="width: 10%;">项目占用端口</th>-->
+<!--                            <th style="width: 10%;">执行命令</th>-->
+<!--                            <th style="width: 10%;">环境变量</th>-->
+<!--                            <th style="width: 10%;">可执行文件项目的目录</th>-->
+<!--                            <th style="width: 10%;">可执行文件项目的压缩文件</th>-->
+<!--                            <th style="width: 10%;">部署平台</th>-->
+<!--                            <th style="width: 10%;">副本数量</th>-->
+<!--                            <th style="width: 10%;">狀態</th>-->
+<!--                            <th style="">操作</th>-->
+<!--                        </tr>-->
+<!--                        </thead>-->
+<!--                        <tbody>-->
+<!--                        <tr v-for="item in project_executable_list">-->
+<!--                            <td>{{item.executable_name}}</td>-->
+<!--                            <td>{{item.executable_note}}</td>-->
+<!--                            <td>{{item.create_time}}</td>-->
+<!--                            <td>{{item.executable_port}}</td>-->
+<!--                            <td>{{item.executable_cmd}}</td>-->
+<!--                            <td>{{item.executable_env}}</td>-->
+<!--                            <td>{{item.executable_dir}}</td>-->
+<!--                            <td>{{item.executable_zip}}</td>-->
+<!--                            <td>{{item.executable_sys}}</td>-->
+<!--                            <td>{{item.executable_duplicate}}</td>-->
+<!--                            <td>-</td>-->
+<!--                            <td>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ProjectExecutableRun(item)">部署并运行</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskList(item)">查看任务列表</button>-->
+<!--                            </td>-->
+<!--                        </tr>-->
+<!--                        </tbody>-->
+<!--                    </table>-->
+<!--                </div>-->
+<!--                <hr>-->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 新建项目 新建Docker容器项目 -->
+    <div class="modal fade" id="NewProjectDockerModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="create_docker_title">新建Docker容器项目</h4>
+                    <h4 class="modal-title" id="update_docker_title" style="display:none;">更新Docker容器项目</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal" id="new_project_docker">
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_name">项目名称</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_name" name="docker_name" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_note">项目备注</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_note" name="docker_note" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_note">是否启用网关服务</label>
+                            <div class="col-sm-9">
+                                <select id="docker_is_gateway" class="form-control" name="docker_is_gateway" style="font-size: 18px;">
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="gateway_port">网关服务端口映射</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="gateway_port" name="gateway_port" placeholder="多个;隔开. 如：80:80;8080:8080">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="gateway_slave">网关服务部署在哪个主机上?(TODO:下拉选择)</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="gateway_slave" name="gateway_slave" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_port">项目占用端口</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_port" name="docker_port" placeholder="多个;隔开. 如：80:80;8080:8080">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_image">镜像</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_image" name="docker_image" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label"  for="docker_user">账号</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_user" name="docker_user" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_password">密码</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_password" name="docker_password" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_env">环境变量</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_env" name="docker_env" placeholder="多个;隔开. 如：a:123;b:456">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_env">Volume</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_volume" name="docker_volume" placeholder="多个;隔开. 如：hostDir:containerDir">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_duplicate">副本数量</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_duplicate" name="docker_duplicate" placeholder="">
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="create_docker_submit" @click="DockerModalSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" id="update_docker_submit" @click="DockerModalSubmit()" style="display:none;">更新并重启</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更新容器镜像 -->
+    <div class="modal fade" id="ProjectDockerImageModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">更新dokcer容器项目镜像</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal" id="project_docker_image">
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="project_name">项目名称</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="project_name" name="project_name" readonly="readonly">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_image">镜像</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_image" name="docker_image" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_user">账号</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_user" name="docker_user" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="docker_password">密码</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="docker_password" name="docker_password" placeholder="">
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="ProjectDockerImageModalSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改项目副本数量 -->
+    <div class="modal fade" id="UpdateProjectDuplicateModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">修改项目副本数量</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="update_project_duplicate">
+                        <div class="input-group">
+                            <label for="duplicate">副本数量</label>
+                            <input type="text" class="form-control" id="duplicate" name="duplicate" >
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="" @click="UpdateProjectDuplicateSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            size: 0,
+            project_docker_list: [],
+            project_executable_list: [],
+            now_project: "",
+        },
+        methods: {
+
+            DockerModalSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#new_project_docker")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ProjectDockerCreate(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#NewProjectDockerModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            ProjectDockerList: function () {
+                const t = this;
+                AjaxRequestText(t.url.ProjectDockerList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.project_docker_list = jsonObj.body.data;
+                    console.log(t.project_docker_list);
+                });
+            },
+
+            ProjectDockerRun: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ProjectDockerRun(item.docker_name), {}, "GET", function(d){
+                    console.log(d);
+                    t.ProjectDockerList();
+                });
+            },
+
+            CreateProjectDocker: function () {
+                $("#create_docker_title").show();
+                $("#update_docker_title").hide();
+                $("#create_docker_submit").show();
+                $("#update_docker_submit").hide();
+                $("#NewProjectDockerModal").modal('show');
+            },
+
+            UpdateProjectDocker: function (item) {
+                $("#create_docker_title").hide();
+                $("#update_docker_title").show();
+                $("#create_docker_submit").hide();
+                $("#update_docker_submit").show();
+                $("#NewProjectDockerModal").modal('show');
+
+                $("#docker_name").val(item.docker_name);
+                $("#docker_note").val(item.docker_note);
+                $("#docker_port").val(item.docker_port);
+                $("#docker_image").val(item.docker_image);
+                $("#docker_user").val(item.docker_user);
+                $("#docker_password").val(item.docker_password);
+                $("#docker_env").val(item.docker_env);
+                $("#docker_duplicate").val(item.docker_duplicate);
+            },
+
+            UpdateProjectDockerImage: function (item) {
+                $("#project_name").val(item.docker_name);
+                $("#ProjectDockerImageModal").modal('show');
+            },
+
+            ProjectDockerImageModalSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#project_docker_image")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url:t.url.ProjectDockerUpdateImage(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#ProjectDockerImageModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            UpdateProjectDockerSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#new_project_docker")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ProjectDockerUpdate(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#NewProjectDockerModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            ProjectExecutableRun: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ProjectExecutableRun(item.executable_name), {}, "GET", function(d){
+                    console.log(d);
+                    // var jsonObj = JSON.parse(d);
+                    // t.project_docker_list = jsonObj.body.data;
+                    // console.log(t.project_docker_list);
+                });
+            },
+
+            ContainerList: function (item) {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/project/container/"+item.docker_name;
+            },
+
+            ExecutableTaskList: function (item) {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/project/executable/"+item.executable_name;
+            },
+
+            ProjectExecutableList: function () {
+                const t = this;
+                AjaxRequestText(t.url.ProjectExecutableList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.project_executable_list = jsonObj.body.data;
+                    console.log(t.project_executable_list);
+                });
+            },
+
+            RefreshExecutable: function () {
+                const t = this;
+                t.ProjectExecutableList();
+            },
+
+            RefreshDocker: function () {
+                const t = this;
+                t.ProjectDockerList();
+            },
+
+            UpdateProjectDockerDuplicate: function (item) {
+                const t = this;
+                t.now_project = item.docker_name;
+                $("#UpdateProjectDuplicateModal").modal("show");
+            },
+
+            UpdateProjectDuplicateSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#update_project_duplicate")[0]);
+                fromData.append("project_name", t.now_project);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ProjectDockerUpdateDuplicate(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#UpdateProjectDuplicateModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            //this.ProjectExecutableList();
+            this.ProjectDockerList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+</script>
+
+</body>
+</html>

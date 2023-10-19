@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4>
+                    <a type="button" @click="ReturnPG()">
+                        <span class="glyphicon glyphicon-arrow-left" aria-hidden="true" style="font-size: 24px;width: 36px;"></span>
+                    </a>
+                    <b>{{slave}} 环境变量列表 </b>
+                </h4>
+
+                <button type="button" class="btn btn-default" @click="Refresh()" >刷新数据</button>
+
+                <!--                <div class="btn-group" role="group" aria-label="...">-->
+                <!--                    <button type="button" class="btn btn-default" @click="">新建环境变量</button>-->
+                <!--                </div>-->
+
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th >环境变量</th>
+<!--                            <th >操作</th>-->
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in env">
+                            <td>{{item}}</td>
+<!--                            <td>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="">删除</button>-->
+<!--                                <button type="button" class="btn btn-default btn-sm" @click="">修改</button>-->
+<!--                            </td>-->
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave: "{[.slave]}",
+            msg: "{[.Msg]}",
+            slave_list: {},
+            env: {},
+        },
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Switch: function (){
+                var newSlave = $('#switch_slave').val();
+                console.log(newSlave);
+                window.location.href="/slave/env/"+newSlave;
+            },
+
+            ReturnPG: function () {
+                const t = this;
+                window.location.href="/slave/"+t.slave;
+            },
+
+            GetSlaveEnv: function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveEnvList(t.slave), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.env = jsonObj.body.data;
+                    console.log(t.env);
+                });
+            },
+
+            Refresh: function (){
+                const t = this;
+                t.GetSlaveEnv();
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            console.log(this.slave);
+            this.GetSlaveList();
+            this.GetSlaveEnv();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+
+
+</script>
+
+</body>
+</html>

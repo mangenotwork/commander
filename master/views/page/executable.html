@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>可执行文件管理</b></h4>
+                <br>
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#NewExecutableModal">新建可执行文件</button>
+                </div>
+                <hr>
+                <h4><b>运行列表</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshExecutableRun()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th style="width: 10%;">任務ID</th>
+                            <th style="width: 10%;">備註</th>
+                            <th style="width: 10%;">可執行文件</th>
+                            <th style="width: 10%;">主機</th>
+                            <th style="width: 10%;">執行命令</th>
+                            <th style="width: 10%;">參數</th>
+                            <th style="width: 20%;">部署時間</th>
+                            <th style="width: 10%;">進程ID</th>
+                            <th style="width: 10%;">狀態</th>
+                            <th style="">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in executable_task">
+                            <td>{{item.TaskId}}</td>
+                            <td>{{item.Note}}</td>
+                            <td>{{item.ExecutableName}}</td>
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.Command}}</td>
+                            <td>{{item.Arg}}</td>
+                            <td>{{item.Time}}</td>
+                            <td>{{item.PID}}</td>
+                            <td>{{item.State}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="RunState(item)">刷新状态</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Log(item)">查看日誌</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Stop(item)">終止</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ForceStop(item)">強制終止</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskRun(item)">启动</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskRestart(item)">重啓</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutableTaskDelete(item)">刪除</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="ExecutablePInfo(item)">查看进程详情</button>
+                                <button type="button" class="btn btn-default btn-sm" >clone到其他主機</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+                <h4><b>可执行文件列表</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshExecutable()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th style="width: 10%;">Name</th>
+                            <th style="width: 10%;">File</th>
+                            <th style="width: 10%;">FileID</th>
+                            <th style="width: 10%;">OSType</th>
+                            <th style="width: 10%;">Size</th>
+                            <th style="width: 15%;">UploadTime</th>
+                            <th style="width: 10%;">Md5</th>
+                            <th style="width: 15%;">Cmd</th>
+                            <th style="width: 15%;">Env</th>
+                            <th style="">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in executable_list.List">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.FileName}}</td>
+                            <td>{{item.FileID}}</td>
+                            <td>{{item.OSType}}</td>
+                            <td>{{item.Size}}</td>
+                            <td>{{item.UploadTime}}</td>
+                            <td>{{item.Md5}}</td>
+                            <td>{{item.Cmd}}</td>
+                            <td>{{item.Env}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="OpenDir(item)">进入目录结构</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="">修改配置文件</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Deploy(item)">部署执行</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Delete(item)">删除</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Download(item)">下载</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建可执行文件 弹出层 -->
+    <div class="modal fade" id="NewExecutableModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">新建可执行文件</h4>
+                </div>
+                <div class="modal-body">
+                    <span style="color: red">请将可执行文件进行压缩上传(zip,rar)，规定必须含有可执行文件，可含有相关配置文件，相关扩展目录等。</span>
+                    <br>
+                    <br>
+
+                    <form id="new_executable" class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Name</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="new_executable_name" name="name" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">运行命令</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="new_executable_cmd" name="cmd" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">运行的环境变量,多个;隔开</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="new_executable_env" name="env" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">系统</label>
+                            <div class="col-sm-9">
+                                <select id="os_type" class="form-control" name="os_type" style="font-size: 18px;">
+                                    <option value="unix">Unix/Linux</option>
+    <!--                                <option value="win">Windows</option>-->
+                                </select>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">选择压缩文件</label>
+                            <div class="col-sm-9">
+                                <input type="file" id="file" name="file">
+                            </div>
+                        </div>
+                        <br>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="Submit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 部署可执行文件 弹出层 -->
+    <div class="modal fade" id="DeployExecutableModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">部署可执行文件</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="deploy_executable" class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Name</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="deploy_executable_name" name="name" class="form-control" placeholder=""
+                                       aria-describedby="basic-addon1" readonly="readonly">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">执行命令</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="deploy_executable_cmd" name="cmd" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">执行环境变量</label>
+                            <div class="col-sm-9">
+                                <input type="text" id="deploy_executable_env" name="env" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">备注</label>
+                            <div class="col-sm-9">
+                                <input type="text" name="note" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">选择主机</label>
+                            <div class="col-sm-9">
+                                <select name="slave" class="form-control" style="font-size: 18px;">
+                                    <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <br>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="DeploySubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看进程详情 弹出层 -->
+    <div class="modal fade" id="ExecutablePInfoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">查看进程详情</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="pinfo"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_ip: "{[.Slave]}",
+            executable_list: {},
+            slave_list: {},
+            executable_task: {},
+        },
+        methods: {
+            GetExecutableList:function () {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.executable_list = jsonObj.body.data;
+                    console.log(t.executable_list);
+                });
+            },
+
+            GetExecutableTask: function () {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTask(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.executable_task = jsonObj.body.data;
+                    console.log(t.executable_task);
+                });
+            },
+
+            Delete:function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableDelete(item.Name), {}, "GET", function(d){
+                    console.log(d);
+                    t.GetExecutableList();
+                });
+            },
+
+            RefreshExecutable: function (){
+                const t = this;
+                t.GetExecutableList();
+            },
+
+            RefreshExecutableRun: function (){
+                const t = this;
+                t.GetExecutableTask();
+            },
+
+            Submit: function () {
+                const t = this;
+                var name = $("#new_executable_name").val();
+                var cmd = $("#new_executable_cmd").val();
+                var env = $("#new_executable_env").val();
+                var os_type = $("#os_type").val();
+                var file = $("#file").val();
+                console.log(name);
+                console.log(os_type);
+                console.log(file);
+
+                var fromData = new FormData($("#new_executable")[0]);
+                console.log(fromData);
+
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ExecutableUpload(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#NewExecutableModal').modal('hide');
+                        t.GetExecutableList();
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+
+            },
+
+            Download:function (item) {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location=t.url.ExecutableDownload(item.Name);
+            },
+
+            GetSlaveList:function (){
+                const t = this;
+                const url = "/slave/select";
+                const data = {};
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Deploy:function (item) {
+                const t = this;
+                $('#deploy_executable_name').val(item.Name);
+                $('#deploy_executable_cmd').val(item.Cmd);
+                $('#deploy_executable_env').val(item.Env);
+                $('#DeployExecutableModal').modal('show');
+
+            },
+
+            DeploySubmit:function () {
+                const t = this;
+                var fromData = new FormData($("#deploy_executable")[0]);
+                console.log(fromData);
+
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.ExecutableDeploy(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#DeployExecutableModal').modal('hide');
+                        t.GetExecutableTask();
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            RunState: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableRunState(item.Slave, item.PID, item.TaskId), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.msg, "warning");
+                    t.GetExecutableTask();
+                });
+            },
+
+            ExecutableTaskDelete: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskDelete(item.Slave, item.PID, item.TaskId), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.msg, "warning");
+                    t.GetExecutableTask();
+                });
+            },
+
+            ExecutableTaskRun: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskRun(item.Slave, item.PID, item.ExecutableName, item.TaskId), {}, "GET", function(d){
+                    t.GetExecutableTask();
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.msg, "warning");
+                });
+                t.GetExecutableTask();
+            },
+
+            Log: function (item) {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location=t.url.ExecutableLogPG(item.Slave, item.TaskId)
+            },
+
+            Stop: function (item){
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskKill(item.Slave, item.PID, "15", item.TaskId), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.body.data, "warning");
+                    t.GetExecutableTask();
+                });
+            },
+
+            ForceStop: function (item){
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskKill(item.Slave, item.PID, "9", item.TaskId), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.body.data, "warning");
+                    t.GetExecutableTask();
+                });
+            },
+
+            ExecutableTaskRestart: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskRestart(item.Slave, item.PID, "9", item.TaskId), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    Alert(jsonObj.body.data, "warning");
+                    t.GetExecutableTask();
+                });
+            },
+
+            ExecutablePInfo: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.ExecutableTaskPid(item.Slave, item.PID), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    $("#pinfo").empty();
+                    $("#pinfo").append(JSON.stringify(jsonObj.body.data));
+                    $("#ExecutablePInfoModal").modal('show');
+                });
+            },
+
+            OpenDir: function (item) {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location=t.url.ExecutableDir(item.Name);
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetExecutableList();
+            this.GetExecutableTask();
+            this.GetSlaveList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+            this.timer = setInterval(() => {
+                this.GetExecutableTask();
+            }, 3000)
+        },
+    })
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4>
+                    <a type="button" href="/project">
+                        <span class="glyphicon glyphicon-arrow-left" aria-hidden="true" style="font-size: 24px;width: 36px;"></span>
+                    </a>
+                    <b>项目网关管理 </b>
+                </h4>
+
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" @click="NewGateway()">新建项目网关</button>
+                </div>
+
+                <hr>
+                <h4><b>项目网关列表</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshDocker()" >刷新数据</button>
+                <div class="table-responsive">
+                    <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                        <thead>
+                        <tr>
+                            <th >所在主机</th>
+                            <th >项目</th>
+                            <th >端口</th>
+                            <th >LVS</th>
+                            <th >LVS Model</th>
+                            <th >是否关闭</th>
+                            <th >任务创建时间</th>
+                            <th >操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="item in gateway_list">
+                            <td>{{item.Slave}}</td>
+                            <td>{{item.ProjectName}}</td>
+                            <td>{{item.Ports}}</td>
+                            <td>{{item.LVS}}</td>
+                            <td>{{item.LVSModel}}</td>
+                            <td>{{item.IsClose}}</td>
+                            <td>{{item.Create}}</td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-sm" @click="UpdateProjectPortOpen(item)">修改端口</button>
+                                <button type="button" class="btn btn-default btn-sm" @click="Delete(item)">删除</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改网关映射端口 -->
+    <div class="modal fade" id="UpdateProjectPortModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">修改网关映射端口</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="update_project_port">
+                        <div class="input-group">
+                            <label for="gateway_port">网关服务端口映射</label>
+                            <input type="text" class="form-control" id="gateway_port" name="gateway_port" placeholder="多个;隔开. 如：80:80;8080:8080">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="" @click="UpdateProjectPortSubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NewGatewayModal 新建网关 -->
+    <div class="modal fade" id="NewGatewayModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">新建网关</h4>
+                </div>
+                <div class="modal-body">
+                    <span style="color: red">目前只支持 TCP L4 转发</span>
+                    <form id="new_gateway">
+                        <div class="input-group">
+                            <label>网关服务名称</label>
+                            <input type="text" class="form-control" name="gateway_name">
+                        </div>
+                        <div class="input-group">
+                            <label>网关服务入网端口</label>
+                            <input type="text" class="form-control" name="gateway_port">
+                        </div>
+                        <div class="input-group">
+                            <label>默认转发表</label>
+                            <textarea class="form-control" rows="3" name="forward_table" placeholder="多个;隔开. 如：127.0.0.1:12301;127.0.0.1:12302"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>部署在哪个服务器</label>
+                            <input type="text" class="form-control" name="gateway_slave">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="NewGatewaySubmit()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            gateway_list: [],
+            project_name: "",
+            gateway_slave: "",
+        },
+        methods: {
+            GetList: function () {
+                const t = this;
+                AjaxRequestText(t.url.GatewayList(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.gateway_list = jsonObj.body.data;
+                    console.log(t.gateway_list);
+                });
+            },
+            Delete: function (item) {
+                const t = this;
+                AjaxRequestText(t.url.GatewayDelete(item.Slave, item.ProjectName), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.gateway_list = jsonObj.body.data;
+                    console.log(t.gateway_list);
+                });
+            },
+
+            NewGateway: function () {
+                $("#NewGatewayModal").modal('show');
+            },
+
+            NewGatewaySubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#new_gateway")[0]);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.NewGatewayAPI(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#UpdateProjectPortModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+            UpdateProjectPortOpen: function (item) {
+                const t = this;
+                t.project_name = item.ProjectName;
+                t.gateway_slave = item.Slave;
+                $("#UpdateProjectPortModal").modal('show');
+            },
+
+            UpdateProjectPortSubmit: function () {
+                const t = this;
+                var fromData = new FormData($("#update_project_port")[0]);
+                fromData.append("project_name", t.project_name);
+                fromData.append("gateway_slave", t.gateway_slave);
+                console.log(fromData);
+                $.ajax({
+                    type:'post',
+                    async: false,
+                    url: t.url.GatewayUpdatePort(),
+                    data:fromData,
+                    processData:false,//因为data值是FormData对象，不需要对数据做处理。
+                    contentType:false,//因为是由<form>表单构造的FormData对象，所以这里设置为false。
+                    success:function(data){
+                        console.log(data);
+                        $('#UpdateProjectPortModal').modal('hide');
+                    },
+                    error:function(){
+                        console.log("注册失败");
+                    }
+                });
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            this.GetList();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+</script>
+
+</body>
+</html>

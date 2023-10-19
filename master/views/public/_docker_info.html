@@ -1,0 +1,101 @@
+<h4><b>Docker Info</b></h4>
+<button type="button" class="btn btn-default" data-toggle="modal" data-target="#DockerInfoModal" >查看详细信息</button>
+<br>
+<br>
+<br>
+<dl class="dl-horizontal">
+    <dt>Containers</dt><dd>{{docker_info.Containers}}</dd>
+    <dt>ContainersRunning</dt><dd>{{docker_info.ContainersRunning}}</dd>
+    <dt>ContainersPaused</dt><dd>{{docker_info.ContainersPaused}}</dd>
+    <dt>ContainersStopped</dt><dd>{{docker_info.ContainersStopped}}</dd>
+    <dt>Images</dt><dd>{{docker_info.Images}}</dd>
+    <dt>SystemTime</dt><dd>{{docker_info.SystemTime}}</dd>
+    <dt>KernelVersion</dt><dd>{{docker_info.KernelVersion}}</dd>
+    <dt>OperatingSystem</dt><dd>{{docker_info.OperatingSystem}}</dd>
+    <dt>OSVersion</dt><dd>{{docker_info.OSVersion}}</dd>
+    <dt>OSType</dt><dd>{{docker_info.OSType}}</dd>
+    <dt>Architecture</dt><dd>{{docker_info.Architecture}}</dd>
+    <dt>NCPU</dt><dd>{{docker_info.NCPU}}</dd>
+    <dt>MemTotal</dt><dd>{{docker_info.MemTotal}}</dd>
+    <dt>DockerRootDir</dt><dd>{{docker_info.DockerRootDir}}</dd>
+    <dt>Name</dt><dd>{{docker_info.Name}}</dd>
+    <dt>ServerVersion</dt><dd>{{docker_info.ServerVersion}}</dd>
+</dl>
+<hr>
+
+<!-- docker info 弹出层 -->
+<div class="modal fade" id="DockerInfoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="width: 800px;">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Docker Info</h4>
+            </div>
+            <div class="modal-body">
+                <dl class="dl-horizontal">
+                    <dt>ID</dt><dd>{{docker_info.ID}}</dd>
+                    <dt>Containers</dt><dd>{{docker_info.Containers}}</dd>
+                    <dt>ContainersRunning</dt><dd>{{docker_info.ContainersRunning}}</dd>
+                    <dt>ContainersPaused</dt><dd>{{docker_info.ContainersPaused}}</dd>
+                    <dt>ContainersStopped</dt><dd>{{docker_info.ContainersStopped}}</dd>
+                    <dt>Images</dt><dd>{{docker_info.Images}}</dd>
+                    <dt>Driver</dt><dd>{{docker_info.Driver}}</dd>
+                    <dt>DriverStatus</dt><dd>{{docker_info.DriverStatus}}</dd>
+                    <dt>Plugins</dt><dd>{{docker_info.Plugins}}</dd>
+                    <dt>MemoryLimit</dt><dd>{{docker_info.MemoryLimit}}</dd>
+                    <dt>SwapLimit</dt><dd>{{docker_info.SwapLimit}}</dd>
+                    <dt>KernelMemory</dt><dd>{{docker_info.KernelMemory}}</dd>
+                    <dt>KernelMemoryTCP</dt><dd>{{docker_info.KernelMemoryTCP}}</dd>
+                    <dt>CpuCfsPeriod</dt><dd>{{docker_info.CpuCfsPeriod}}</dd>
+                    <dt>CpuCfsQuota</dt><dd>{{docker_info.CpuCfsQuota}}</dd>
+                    <dt>CPUShares</dt><dd>{{docker_info.CPUShares}}</dd>
+                    <dt>CPUSet</dt><dd>{{docker_info.CPUSet}}</dd>
+                    <dt>PidsLimit</dt><dd>{{docker_info.PidsLimit}}</dd>
+                    <dt>IPv4Forwarding</dt><dd>{{docker_info.IPv4Forwarding}}</dd>
+                    <dt>BridgeNfIptables</dt><dd>{{docker_info.BridgeNfIptables}}</dd>
+                    <dt>BridgeNfIp6tables</dt><dd>{{docker_info.BridgeNfIp6tables}}</dd>
+                    <dt>Debug</dt><dd>{{docker_info.Debug}}</dd>
+                    <dt>NFd</dt><dd>{{docker_info.NFd}}</dd>
+                    <dt>OomKillDisable</dt><dd>{{docker_info.OomKillDisable}}</dd>
+                    <dt>NGoroutines</dt><dd>{{docker_info.NGoroutines}}</dd>
+                    <dt>SystemTime</dt><dd>{{docker_info.SystemTime}}</dd>
+                    <dt>LoggingDriver</dt><dd>{{docker_info.LoggingDriver}}</dd>
+                    <dt>CgroupDriver</dt><dd>{{docker_info.CgroupDriver}}</dd>
+                    <dt>NEventsListener</dt><dd>{{docker_info.NEventsListener}}</dd>
+                    <dt>KernelVersion</dt><dd>{{docker_info.KernelVersion}}</dd>
+                    <dt>OperatingSystem</dt><dd>{{docker_info.OperatingSystem}}</dd>
+                    <dt>OSVersion</dt><dd>{{docker_info.OSVersion}}</dd>
+                    <dt>OSType</dt><dd>{{docker_info.OSType}}</dd>
+                    <dt>Architecture</dt><dd>{{docker_info.Architecture}}</dd>
+                    <dt>IndexServerAddress</dt><dd>{{docker_info.IndexServerAddress}}</dd>
+                    <dt>RegistryConfig</dt><dd>{{docker_info.RegistryConfig}}</dd>
+                    <dt>NCPU</dt><dd>{{docker_info.NCPU}}</dd>
+                    <dt>MemTotal</dt><dd>{{docker_info.MemTotal}}</dd>
+                    <dt>GenericResources</dt><dd>{{docker_info.GenericResources}}</dd>
+                    <dt>DockerRootDir</dt><dd>{{docker_info.DockerRootDir}}</dd>
+                    <dt>HttpProxy</dt><dd>{{docker_info.HttpProxy}}</dd>
+                    <dt>HttpsProxy</dt><dd>{{docker_info.HttpsProxy}}</dd>
+                    <dt>NoProxy</dt><dd>{{docker_info.NoProxy}}</dd>
+                    <dt>Name</dt><dd>{{docker_info.Name}}</dd>
+                    <dt>Labels</dt><dd>{{docker_info.Labels}}</dd>
+                    <dt>ExperimentalBuild</dt><dd>{{docker_info.ExperimentalBuild}}</dd>
+                    <dt>ServerVersion</dt><dd>{{docker_info.ServerVersion}}</dd>
+                    <dt>Runtimes</dt><dd>{{docker_info.Runtimes}}</dd>
+                    <dt>DefaultRuntime</dt><dd>{{docker_info.DefaultRuntime}}</dd>
+                    <dt>Swarm</dt><dd>{{docker_info.Swarm}}</dd>
+                    <dt>LiveRestoreEnabled</dt><dd>{{docker_info.LiveRestoreEnabled}}</dd>
+                    <dt>Isolation</dt><dd>{{docker_info.Isolation}}</dd>
+                    <dt>InitBinary</dt><dd>{{docker_info.InitBinary}}</dd>
+                    <dt>ContainerdCommit</dt><dd>{{docker_info.ContainerdCommit}}</dd>
+                    <dt>RuncCommit</dt><dd>{{docker_info.RuncCommit}}</dd>
+                    <dt>InitCommit</dt><dd>{{docker_info.InitCommit}}</dd>
+                    <dt>SecurityOptions</dt><dd>{{docker_info.SecurityOptions}}</dd>
+                    <dt>Warnings</dt><dd>{{docker_info.Warnings}}</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>

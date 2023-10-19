@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>当前主机: {{slave}} {{msg}} </b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+
+                    <button type="button" class="btn btn-default" aria-label="Left Align" data-toggle="tooltip"
+                            data-placement="top" title="在线监控" @click="OpenSSH()">
+                        <span class="glyphicon glyphicon-blackboard"></span>
+                    </button>
+
+                    <a type="button" class="btn btn-default" href="/monitor/{[.slave]}" target="_blank"
+                       aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="实时性能监控板">
+                        <span class="glyphicon glyphicon-scale"></span></a>
+
+                    <a type="button" class="btn btn-default" href="/dir/{[.slave]}" target="_blank"
+                       aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="目录&文件">
+                        <span class="glyphicon glyphicon-folder-close"></span></a>
+
+                    <a type="button" class="btn btn-default" href="/deployed/{[.slave]}" target="_blank"
+                       aria-label="Left Align" data-toggle="tooltip" data-placement="top" title="软件部署">
+                        <span class="glyphicon glyphicon-save"></span></a>
+
+                    <button type="button" class="btn btn-default" @click="GoToProcess()">进程列表</button>
+                    <button type="button" class="btn btn-default" @click="GoToPort()">端口使用列表</button>
+                    <button type="button" class="btn btn-default" @click="GoToEnv()">环境变量</button>
+                    <button type="button" class="btn btn-default" @click="GoToDocker()">Docker管理</button>
+                    <button type="button" class="btn btn-default" @click="OpenHostsModal()">Hosts管理</button>
+                    <a type="button" class="btn btn-default" href="/executable" target="_blank">部署可执行文件</a>
+                    <a type="button" class="btn btn-default" href="/nginx/{[.slave]}" target="_blank">Nginx管理</a>
+
+
+                </div>
+                <br>
+                <br>
+               <div class="btn-group" role="group" aria-label="...">
+
+                    <!--                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#">(TODO)执行命令</button>-->
+                    <!--                    <button type="button" class="btn btn-default">(TODO)导出文件</button>-->
+                    <!--                    <button type="button" class="btn btn-default">(TODO)上传文件</button>-->
+                </div>
+                <hr>
+                <h4><b>切换主机</b></h4>
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-sm-4">
+                            <select id="switch_slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <button type="button" class="btn btn-default" @click="Switch()">切换</button>
+                        </div>
+                    </div>
+                </div>
+                <br>
+
+                <hr>
+                <h4><b>基础信息</b></h4>
+                <button type="button" class="btn btn-default" @click="Refresh()" >刷新数据</button>
+                <br>
+                <br>
+                <dl class="dl-horizontal">
+                    <dt>HostName</dt><dd>{{slave_info.host_name}}</dd>
+                    <dt>IP</dt><dd>{{slave_info.ip}}</dd>
+                    <dt>系统类型</dt><dd>{{slave_info.sys_type}}</dd>
+                    <dt>系统架构</dt><dd>{{slave_info.sys_architecture}}</dd>
+                    <dt>系统版本或名称</dt><dd>{{slave_info.os_name}}</dd>
+                    <dt>主板ID</dt><dd>{{slave_info.board_id}}</dd>
+                    <dt>CPU</dt><dd>{{slave_info.cpu_name}}</dd>
+                    <dt>cpu core number</dt><dd>{{slave_info.cpu_core_number}}</dd>
+                    <dt>cpu id</dt><dd>{{slave_info.cpu_id}}</dd>
+                    <dt>mem totle</dt><dd>{{slave_info.mem_totle}}</dd>
+                    <dt>disk totle</dt><dd>{{slave_info.disk_totle}} MB</dd>
+                </dl>
+                <hr>
+
+                <!-- 性能图 -->
+                <h4><b>性能板</b></h4>
+                <a type="button" class="btn btn-default" href="/monitor/{[.slave]}" >实时性能监控板</a>
+                <br>
+                <br>
+                CPU使用率： {[.cpuRate]} %
+                <div class="progress">
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{[.cpuRate]}"
+                         aria-valuemin="0" aria-valuemax="100" style="width: {[.cpuRate]}%">
+                        <span class="sr-only">40% Complete (success)</span>
+                    </div>
+                </div>
+                内存使用率: {[.memRate]} %
+                <div class="progress">
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{[.memRate]}"
+                         aria-valuemin="0" aria-valuemax="100" style="width: {[.memRate]}%">
+                        <span class="sr-only">20% Complete</span>
+                    </div>
+                </div>
+                磁盘使用率: {[.diskRate]} %
+                <div class="progress">
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{[.diskRate]}"
+                         aria-valuemin="0" aria-valuemax="100" style="width: {[.diskRate]}%">
+                        <span class="sr-only">60% Complete (warning)</span>
+                    </div>
+                </div>
+                <hr>
+
+                <h4><b>磁盘分区</b></h4>
+                <table class="table table-hover" style="word-break:break-all; word-wrap:break-all;">
+                       <tbody>
+                            <tr v-for="item in slave_info.disk">
+                                <td>{{item}}</td>
+                            </tr>
+                       </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- hosts 修改 -->
+    <div class="modal fade" id="HostsModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Hosts</h4>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" id="hosts_data" rows="20"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="HostsUpdate()">修改</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ssh 账号密码 -->
+    <div class="modal fade" id="SSHModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">连接ssh</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <span class="input-group-addon">端口</span>
+                        <input type="text" name="ssh_port" id="ssh_port" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                    </div>
+                    <br>
+                    <div class="input-group">
+                        <span class="input-group-addon">User</span>
+                        <input type="text" name="ssh_user" id="ssh_user" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Password</span>
+                        <input type="password" name="ssh_password" id="ssh_password" class="form-control" placeholder="" aria-describedby="basic-addon1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" @click="OpenWs2SSH()">登录</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave: "{[.slave]}",
+            msg: "{[.Msg]}",
+            slave_list: {},
+            slave_info: {},
+            env:[],
+            hosts: "",
+        },
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Switch: function (){
+                var newSlave = $('#switch_slave').val();
+                console.log(newSlave);
+                window.location.href="/slave/"+newSlave;
+            },
+
+            GetSlaveInfo: function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveInfo(t.slave), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_info = jsonObj.body.data;
+                    console.log(t.slave_info);
+                });
+            },
+
+            Refresh: function () {
+                const t = this;
+                t.GetSlaveInfo();
+            },
+
+            GoToProcess: function (){
+                const t = this;
+                window.location.href="/slave/process/"+t.slave;
+            },
+
+            GoToPort: function (){
+                const t = this;
+                window.location.href="/slave/port/"+t.slave;
+            },
+            GoToDocker: function () {
+                const t = this;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/docker/"+t.slave;
+            },
+            GoToEnv: function (){
+                const t = this;
+                window.location.href="/slave/env/"+t.slave;
+            },
+
+            OpenHostsModal:function () {
+                const t = this;
+                AjaxRequestText(t.url.SlaveHosts(t.slave), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.hosts = jsonObj.body.data;
+                    console.log(t.hosts);
+                    $("#hosts_data").text(t.hosts);
+                    $("#HostsModal").modal('show');
+                });
+            },
+
+            HostsUpdate: function () {
+                const t = this;
+                var data = {
+                    "slave": t.slave,
+                    "hosts_data": $("#hosts_data").val()
+                }
+                var dataJson = JSON.stringify(data)
+                AjaxRequest(
+                    t.url.SlaveHostsUpdate(),
+                    dataJson,
+                    "POST",
+                    function(d){
+                        console.log(d);
+                        var jsonObj = JSON.parse(d);
+                        t.hosts = jsonObj.body.data;
+                        console.log(t.hosts);
+                        $("#hosts_data").text(t.hosts);
+                    }
+                );
+            },
+
+            OpenSSH: function () {
+                $("#SSHModal").modal('show');
+            },
+
+            OpenWs2SSH: function () {
+                const t = this;
+                $("#SSHModal").modal('hide');
+                var port = $("#ssh_port").val();
+                var user = $("#ssh_user").val();
+                var password = $("#ssh_password").val();
+
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/ssh?ip="+t.slave+"&port="+port+"&user="+user+"&password="+password;
+            },
+
+        },
+        created:function(){
+            console.log("created");
+            console.log(this.slave);
+            this.GetSlaveList();
+            this.GetSlaveInfo();
+            WSConnectNotice();
+        },
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

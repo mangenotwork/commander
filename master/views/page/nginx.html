@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+                <h4><b>当前主机: {{slave_ip}} {{msg}}</b></h4>
+
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" @click="NginxStart()">启动</button>
+                    <button type="button" class="btn btn-default"  @click="NginxReload()">重启</button>
+                    <button type="button" class="btn btn-default"  @click="NginxQuit()">暂停</button>
+                    <button type="button" class="btn btn-default"  @click="NginxStop()">强制停止</button>
+                    <button type="button" class="btn btn-default" >进入日志路径 TODO</button>
+                    <button type="button" class="btn btn-default" >查看Nginx日志 TODO</button>
+                </div>
+
+                <hr>
+                <h4><b>切换主机</b></h4>
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-sm-4">
+                            <select id="switch_slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <button type="button" class="btn btn-default" @click="Switch()">切换</button>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <hr>
+
+                <h4><b>Nginx Info</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshNginxInfo()" >刷新数据</button>
+                <br>
+                <br>
+                <dl class="dl-horizontal">
+                    <dt>版本</dt><dd>{{nginx_info.Version}}</dd>
+                    <dt>配置路径</dt><dd>{{nginx_info.ConfPath}}</dd>
+                    <dt>日志路径</dt><dd>{{nginx_info.LogPath}}</dd>
+                    <dt>进程</dt><dd>{{nginx_info.PID}}</dd>
+                    <dt>状态</dt><dd>{{nginx_info.Status}}</dd>
+                </dl>
+                <hr>
+
+                <h4><b>Nginx 配置 {{nginx_info.ConfPath}} </b></h4>
+                <button type="button" class="btn btn-default" @click="CatNginxConf()" >刷新数据</button>
+                <button type="button" class="btn btn-default" @click="OpenNginxConf()" >编辑</button>
+                <button type="button" class="btn btn-default" @click="NginxCheckConf()" >检查配置文件</button>
+                <br>
+                <br>
+
+                <pre id="nginx_conf">
+                </pre>
+
+                <hr>
+                <h4><b>Nginx 配置目录</b></h4>
+                <button type="button" class="btn btn-default" @click="RefreshNginxConfDir()" >刷新数据</button>
+                <br>
+                <div class="row">
+
+                    <div class="col-md-3" style="padding: 12px;height: 100px;" v-for="item in dir">
+                        <span v-if="item.IsDir === false && item.IsEdit === true"
+                              class="glyphicon glyphicon-cog" aria-hidden="true" style="font-size: 39px;"></span>
+
+                        <span v-else-if="item.IsDir === false && item.IsEdit === false"
+                              class="glyphicon glyphicon-file" aria-hidden="true" style="font-size: 39px;"></span>
+
+                        <span v-else-if="item.IsDir === true && item.IsEdit === false"
+                              class="glyphicon glyphicon-folder-close" aria-hidden="true" style="font-size: 39px;"></span>
+                        <br>
+                        {{item.FileName}}
+                        <br>
+                        <button v-if="item.IsDir == false && item.IsEdit == true"
+                                type="button" class="btn btn-default btn-xs" @click="OpenFileModal(item)">编辑</button>
+                        <button v-if="item.IsDir == false"
+                                type="button" class="btn btn-default btn-xs" @click="DownloadFile(item)">下载</button>
+                        <button v-if="item.IsDir == true && item.IsEdit == false"
+                                type="button" class="btn btn-default btn-xs" @click="GoToDirBut(item)">进入</button>
+                        <button v-if="item.IsZip == true"
+                                type="button" class="btn btn-default btn-xs" @click="DecompressFile(item)">解压</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改文件 TODO 改为可修改的编辑 -->
+    <div class="modal fade" id="OpenFileModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-target=".bs-example-modal-lg">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 900px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">修改配置<span id="file_path"></span></h4>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" id="file_code" rows="30"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" @click="ConfUpdate()">提交</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_ip: "{[.Slave]}",
+            msg: "{[.msg]}",
+            slave_list: {},
+            nginx_info: {},
+            dir: {},
+            now_path: "",
+        },
+
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            Switch: function (){
+                var newSlave = $('#switch_slave').val();
+                console.log(newSlave);
+                window.location.href="/nginx/"+newSlave;
+            },
+
+            GetNginxInfo: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.GetNginxInfo(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            RefreshNginxInfo: function () {
+                const t = this;
+                t.GetNginxInfo();
+            },
+
+            GetNginxDir: function () {
+                const t = this;
+                var path = t.nginx_info.ConfPath;
+                var lst = path.split("/")
+                var newPath = lst.slice(0,-1).join("/")
+                console.log(newPath);
+                t.now_path = newPath;
+                AjaxRequestTextNotAsync(t.url.GetSlavePath(t.slave_ip, newPath), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    t.dir = jsonObj.body.data;
+                    console.log(t.dir);
+                });
+            },
+
+            CatNginxConf: function () {
+                const t = this;
+                AjaxRequestText(t.url.CatSlaveFile(t.slave_ip, t.nginx_info.ConfPath), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    var note = jsonObj.body.data;
+                    console.log(note);
+                    $("#nginx_conf").text(note);
+                });
+            },
+
+            OpenNginxConf: function () {
+                const t = this;
+                AjaxRequestText(t.url.CatSlaveFile(t.slave_ip, t.nginx_info.ConfPath), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    var note = jsonObj.body.data;
+                    console.log(note);
+                    $("#file_path").text(t.nginx_info.ConfPath);
+                    $("#file_code").val(note);
+                });
+
+                //console.log(path);
+                $("#OpenFileModal").modal('show');
+            },
+
+            OpenFileModal: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                AjaxRequestText(t.url.CatSlaveFile(t.slave_ip, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    var note = jsonObj.body.data;
+                    console.log(note);
+                    $("#file_path").text(path);
+                    $("#file_code").val(note);
+                });
+
+                //console.log(path);
+                $("#OpenFileModal").modal('show');
+            },
+
+            DownloadFile: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                var tempwindow=window.open('_blank');
+                tempwindow.location="/api/slave/download?path="+path+"&slave="+t.slave;
+            },
+
+            GoToDirBut: function (item) {
+                const t = this;
+                t.now_path = t.now_path + "/" + item.FileName;
+                t.GetSlavePath(t.now_path);
+            },
+
+            GetSlavePath: function (path) {
+                const t = this;
+                t.now_path = path;
+                AjaxRequestText(t.url.GetSlavePath(t.slave_ip, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    t.dir = jsonObj.body.data;
+                    console.log(t.dir);
+                });
+            },
+
+            RefreshNginxConfDir: function () {
+                const t = this;
+                t.GetNginxDir();
+            },
+
+            DecompressFile: function (item) {
+                const t = this;
+                var path = t.now_path + "/" + item.FileName;
+                AjaxRequestText(t.url.SlaveDecompressFile(t.slave, path), {}, "GET", function(d){
+                    var jsonObj = JSON.parse(d);
+                    console.log(jsonObj);
+                    t.GetSlavePath(t.now_path);
+                });
+                $("#MkdirModal").modal('hide');
+            },
+
+            NginxStart: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.NginxStart(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            NginxReload: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.NginxReload(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            NginxQuit: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.NginxQuit(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            NginxStop: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.NginxStop(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            NginxCheckConf: function () {
+                const t = this;
+                AjaxRequestTextNotAsync(t.url.NginxCheckConf(t.slave_ip), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.nginx_info = jsonObj.body.data;
+                });
+            },
+
+            ConfUpdate: function () {
+                const t = this;
+                var data = {
+                    "slave": t.slave_ip,
+                    "path": $("#file_path").text(),
+                    "data": $("#file_code").val()
+                }
+                console.log(data)
+                var dataJson = JSON.stringify(data)
+                AjaxRequest(
+                    t.url.NginxUpdateConf(),
+                    dataJson,
+                    "POST",
+                    function(d){
+                        console.log(d);
+                        $("#confModal").modal('hide');
+                    }
+                );
+
+                if ($("#file_path").text() === t.nginx_info.ConfPath) {
+                    t.CatNginxConf();
+                }
+
+            },
+
+        },
+
+        created:function(){
+            console.log("created");
+            WSConnectNotice();
+            this.GetSlaveList();
+            this.GetNginxInfo();
+            this.GetNginxDir();
+            this.CatNginxConf();
+        },
+
+        mounted:function(){
+
+        },
+    })
+
+</script>
+
+</body>
+</html>

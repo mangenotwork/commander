@@ -1,0 +1,23 @@
+<div class="col-sm-3 col-md-2 sidebar">
+    <ul class="nav nav-sidebar">
+        <li {[if eq .nav "home"]} class="active" {[end]}><a href="/home">主页</a></li>
+        <li {[if eq .nav "slave"]} class="active" {[end]}><a href="/slave/0">服务器控制</a></li>
+        <li {[if eq .nav "project"]} class="active" {[end]}><a href="/project">项目</a></li>
+    </ul>
+    <ul class="nav nav-sidebar">
+        <li {[if eq .nav "docker_manage"]} class="active" {[end]}><a href="/docker/0" style="font-size: 12px;">Docker管理</a></li>
+        <li {[if eq .nav "executable"]} class="active" {[end]}><a href="/executable" style="font-size: 12px;">可执行文件管理</a></li>
+        <li {[if eq .nav "forward"]} class="active" {[end]}><a href="/forward" style="font-size: 12px;">网络代理</a></li>
+        <li {[if eq .nav "nginx_manage"]} class="active" {[end]}><a href="/nginx/0" style="font-size: 12px;">Nginx管理</a></li>
+        <li {[if eq .nav "env_deployed"]} class="active" {[end]}><a href="/deployed/0" style="font-size: 12px;">软件部署</a></li>
+        <li {[if eq .nav "cache"]} class="active" {[end]}><a href="/cache" style="font-size: 12px;">缓存</a></li>
+        <li {[if eq .nav "monitor"]} class="active" {[end]}><a href="/monitor" style="font-size: 12px;">监控</a></li>
+        <li {[if eq .nav "task"]} class="active" {[end]}><a href="/task" style="font-size: 12px;">记录</a></li>
+    </ul>
+    <ul class="nav nav-sidebar">
+        <li><a href="http://commander.mange.work/" target="_blank" style="font-size: 12px;">Command主页</a></li>
+        <li><a href="https://mange.work/" target="_blank" style="font-size: 12px;">开发者</a></li>
+        <li><a href="http://commander.mange.work/" target="_blank" style="font-size: 12px;">社区</a></li>
+        <li><a href="http://commander.mange.work/" target="_blank" style="font-size: 12px;">在线帮助</a></li>
+    </ul>
+</div>

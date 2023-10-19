@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+{[template "__head.html"]}
+
+<body>
+<div id="app">
+
+    {[template "__navbar.html"]}
+
+    <div class="container-fluid">
+        <div class="row">
+
+            {[template "__sidebar.html" .]}
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h4><b>当前主机: {{slave_ip}} {{msg}} </b></h4>
+                <hr>
+                <h4><b>切换主机</b></h4>
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-sm-4">
+                            <select id="switch_slave" class="form-control" style="font-size: 18px;">
+                                <option v-for="item in slave_list" :value="item.slave">{{item.online}}</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <button type="button" class="btn btn-default" @click="Switch()">切换</button>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <hr>
+
+                <div class="row">
+                    {[range .EnvCheck.SoftwareCheck]}
+
+                        {[if eq .Software "docker"]}
+                            <div class="col-sm-4 col-md-3">
+                                <div class="thumbnail">
+                                    <img src="/static/docker.webp" alt="..." style="width: 100%;height: 210px;">
+                                    <div class="caption">
+                                        <h3>Docker EC</h3>
+                                        {[if eq .IsHave false]}
+                                            <span style="font-size: 9px;">只支持yum和apt的包管理工具安装</span>
+                                        {[else]}
+                                            <span style="font-size: 9px;">{[.Info]}</span>
+                                        {[end]}
+                                        <p>
+                                            {[if eq .IsHave false]}
+                                                <a href="#" class="btn btn-default" role="button" @click="InstallDocker()">开始安装</a>
+                                            {[else]}
+                                                <a href="#" class="btn btn-default" role="button" disabled="disabled">已安装</a>
+                                                <a href="#" class="btn btn-default" role="button" @click="RemoveDocker()">卸载</a>
+                                            {[end]}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {[end]}
+
+                        {[if eq .Software "nginx"]}
+                            <div class="col-sm-4 col-md-3">
+                                <div class="thumbnail">
+                                    <img src="/static/nginx.webp" alt="..." style="width: 100%;height: 210px;">
+                                    <div class="caption">
+                                        <h3>Nginx</h3>
+                                        {[if eq .IsHave false]}
+                                            <span style="font-size: 9px;">只支持yum和apt的包管理工具安装</span>
+                                        {[else]}
+                                            <span style="font-size: 9px;">{[.Info]}</span>
+                                        {[end]}
+                                        <p>
+                                            {[if eq .IsHave false]}
+                                                <a href="#" class="btn btn-default" role="button" @click="InstallNginx()">开始安装</a>
+                                            {[else]}
+                                                <a href="#" class="btn btn-default" role="button" disabled="disabled">已安装</a>
+                                                <a href="#" class="btn btn-default" role="button" @click="RemoveNginx()">卸载</a>
+                                            {[end]}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {[end]}
+
+
+                    {[end]}
+
+
+<!--                    <div class="col-sm-4 col-md-3">-->
+<!--                        <div class="thumbnail">-->
+<!--                            <img src="/static/def.svg" alt="..." style="width: 100%;height: 210px;">-->
+<!--                            <div class="caption">-->
+<!--                                <h3>Golang</h3>-->
+<!--                                <span style="font-size: 9px;">TODO...</span>-->
+<!--                                <p>-->
+<!--                                    <a href="#" class="btn btn-default" role="button" disabled="disabled">已安装</a>-->
+<!--                                    <a href="#" class="btn btn-default" role="button">卸载</a>-->
+<!--                                    <a href="#" class="btn btn-default" role="button">重新安装</a>-->
+<!--                                </p>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{[template "__js.html"]}
+{[template "__init_js.html"]}
+
+<script type="text/javascript">
+    var app = new Vue({
+        el: '#app',
+        data: {
+            url: new Url(),
+            slave_list: {},
+            slave_ip: "{[.Slave]}",
+            msg: "{[.Msg]}",
+        },
+
+        methods: {
+            GetSlaveList:function (){
+                const t = this;
+                AjaxRequestText(t.url.SlaveSelect(), {}, "GET", function(d){
+                    //console.log(d);
+                    var jsonObj = JSON.parse(d);
+                    t.slave_list = jsonObj.body.data;
+                });
+            },
+
+            InstallDocker:function (){
+                const t = this;
+                AjaxRequestText(t.url.InstallDocker(t.slave_ip), {}, "GET", function(d){
+                    console.log(d);
+                    location.reload();
+                });
+            },
+
+            RemoveDocker:function (){
+                const t = this;
+                AjaxRequestText(t.url.RemoveDocker(t.slave_ip), {}, "GET", function(d){
+                    console.log(d);
+                    location.reload();
+                });
+            },
+
+            InstallNginx:function (){
+                const t = this;
+                AjaxRequestText(t.url.InstallNginx(t.slave_ip), {}, "GET", function(d){
+                    console.log(d);
+                    location.reload();
+                });
+            },
+
+            RemoveNginx:function (){
+                const t = this;
+                AjaxRequestText(t.url.RemoveNginx(t.slave_ip), {}, "GET", function(d){
+                    console.log(d);
+                    location.reload();
+                });
+            },
+
+        },
+
+        created:function(){
+            console.log("created");
+            this.GetSlaveList();
+            WSConnectNotice();
+        },
+
+        mounted:function(){
+
+        },
+    })
+
+
+</script>
+
+</body>
+</html>
